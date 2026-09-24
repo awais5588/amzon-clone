@@ -14,7 +14,7 @@ const cartItemSchema = new Schema(
 
 const cartSchema = new Schema(
   {
-    user: { type: Schema.Types.ObjectId, ref: "User", required: true, unique: true },
+    userId: { type: String, required: true, unique: true },
     items: { type: [cartItemSchema], default: [] },
   },
   { timestamps: true }

@@ -1,4 +1,5 @@
 import { AmazonLogo } from "./AmazonLogo";
+import { CartBadge } from "./CartBadge";
 
 const NAV_LINKS = [
   "alexa for shopping",
@@ -119,9 +120,7 @@ export function GlobalNav() {
         <a href="/cart" className="flex items-end border border-transparent hover:border-white px-2">
           <span className="relative">
             <CartIcon />
-            <span className="absolute -top-1 left-2.5 text-orange-400 text-xs font-bold">
-              {0}
-            </span>
+            <CartBadge />
           </span>
           <span className="text-sm font-bold ml-0.5 mb-0.5">Cart</span>
         </a>

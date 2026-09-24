@@ -5,9 +5,9 @@ author: Awais Javed
 model: opencode/big-pickle
 tool: opencode
 project: amzonClone
-total_exchanges: 12
+total_exchanges: 13
 first_prompt_time: 2026-09-24T07:05:06.461Z
-last_prompt_time: 2026-09-24T08:25:31.911Z
+last_prompt_time: 2026-09-24T08:33:17.065Z
 ---
 
 # Session Log - 2026-09-24
@@ -429,7 +429,55 @@ Continue committing meaningful changes with `.agent-logs/` interleaved. Do not m
 After completing P2, run the relevant checks, report what was completed, and stop for approval before starting P3. 
 
 [LOG_ENTRY type=RESPONSE num=12 session=ses_f2dc]
-timestamp: 2026-09-24T08:28:26.833Z
+timestamp: 2026-09-24T08:31:09.869Z
 model: opencode/big-pickle
 
-Now a helper mapping Product docs → card data, then the Home page.
+**P2 complete** (commit `0a564c7`). Per your directive, stopping for approval before P3.
+
+**What P2 delivered** (per `/recon/home.png` + product-map):
+- **`components/GlobalNav.tsx`** — full nav per screenshot: `amazon` wordmark w/ smile, `Delivering to Nashville 37217 • Update location` pin block, search box w/ department dropdown (`All`, 5 departments, GET→`/search`), right cluster (`Hello, Awais` / `Account & Lists ▾`, `EN ▾`, `Returns & Orders`, `Cart` badge), plus the services strip (`All`, `alexa for shopping`, `Join Prime`, `Early Prime Deals`, `Prime Video`, `Buy Again`, `Groceries`, `Coupons`, `Pharmacy`, `Amazon Home - Automotive`, `VS` compare, countdown `03:08`).
+- **`components/ProductCard.tsx`** + **`lib/products.ts`** (`productToCard`, `fetchProductsBySlugs`) + **`lib/format.ts`** (cents→price, K-formatting).
+- **`app/page.tsx`** (dynamic server page, live DB): Prime focus column ("Exclusively for members / Prime Big Deals / drop Oct 6-7 / Join Prime") + 4-card promo grid (The fall edit, Halloween candy picks, Nike sportswear, under $20); candy feature tiles (Brach's Autumn Mix, Sour Patch Kids w/ live prices); **`Top-selling Amazon Devices`** shelf (Fire TV Stick 4K Max/Plus, Echo Dot, Kindle — real seed data, `$84.99`, ratings, `10K+ bought`); **`You might like`** sponsored shelf.
+- **`components/Footer.tsx`** — `Back to top` + 4-column links + legal bar.
+- **`app/globals.css`** — Amazon palette tokens (`#131921`/`#232F3E`/`#E3E6E6`/`#007185`/`#FF9900`/`#FFD814`/star `#FFA41C`), light-only, removed template dark-mode/Geist.
+- **`app/layout.tsx`** — wraps all pages w/ nav+footer; `<Link>`/anchor patterns per docs; `next.config.ts` adds picsum remote images.
+
+**Verified**: `next typegen` ✓, typecheck ✓, lint ✓, `next build` ✓, dev smoke render ✓ (HTTP 200, Prime hero, devices shelf with Fire TV Stick $84.99 in HTML from MongoDB, footer). Capture log committed interleaved. `.agent-logs/` history untouched.
+
+**Notes / deferred**
+- Cart badge is static `0`; logged-in nav state is hardcoded `Hello, Awais` until P6 auth replaces it.
+- Services-strip entries, `Join Prime`, promo links are inert placeholders (real targets arrive in P3/P4).
+- Home candy tiles use picsum art (screenshot candy photos not used directly).
+
+Approve to start **P3** (SERP: query + department + sort + filter pills + left refinement rail + result cards + inline add-to-cart + sticky mini-cart)?
+
+[LOG_ENTRY type=PROMPT num=13 session=ses_f2dc]
+timestamp: 2026-09-24T08:33:17.065Z
+model: opencode/big-pickle
+
+Approved. Start P3.
+
+Implement the SERP/search experience according to the approved `/recon/search.png` and product-map:
+
+* Search query
+* Department selection
+* Sort
+* Filter pills
+* Left refinement/filter rail
+* Product result cards
+* Inline Add to Cart
+* Sticky mini-cart
+
+Use the existing Next.js + TypeScript + Tailwind + MongoDB architecture and the existing ProductCard/product utilities.
+
+Keep the UI closely aligned with the recon screenshot. Make the interactions functional using the seeded MongoDB data rather than static placeholder data where applicable.
+
+Run typecheck, lint, build, and relevant smoke checks after implementation. Commit the P3 work with the live `.agent-logs/` interleaved and do not modify or delete previous logs.
+
+After P3 is complete, report the results and stop for approval before starting P4. 
+
+[LOG_ENTRY type=RESPONSE num=13 session=ses_f2dc]
+timestamp: 2026-09-24T08:44:40.655Z
+model: opencode/big-pickle
+
+Checking the "10K+ bought" line and any server errors, then stopping the dev server.
