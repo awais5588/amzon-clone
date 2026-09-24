@@ -6,8 +6,11 @@ import { SerpResultCard } from "@/components/SerpResultCard";
 import { SearchSort } from "@/components/SearchSort";
 import { MiniCart } from "@/components/MiniCart";
 import { getCartState } from "@/lib/cart";
+import { deliveryPromises } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
+
+const deliveryPromisesPage = deliveryPromises();
 
 const POPULAR_IDEAS = ["Fire", "Android", "Streaming", "Apple"];
 const POPULAR_IDEAS_MORE = ["Gaming", "Roku 4K HD"];
@@ -33,7 +36,17 @@ function escapeRegExp(s: string): string {
 
 function baseParams(sp: Record<string, string | string[] | undefined>): URLSearchParams {
   const p = new URLSearchParams();
-  for (const k of ["q", "department", "sort", "p"]) {
+  for (const k of [
+    "q",
+    "department",
+    "sort",
+    "p",
+    "rating",
+    "freeship",
+    "delivery",
+    "minPrice",
+    "maxPrice",
+  ]) {
     const v = asString(sp[k]);
     if (v) p.set(k, v);
   }
@@ -135,7 +148,7 @@ export default async function SearchPage({
     const range: Record<string, number> = {};
     if (!Number.isNaN(minPrice)) range.$gte = minPrice;
     if (!Number.isNaN(maxPrice)) range.$lte = maxPrice;
-    filter["variants.0.priceCents"] = { ...range, "$gt": 0 };
+    filter["variants.priceCents"] = { ...range, "$gt": 0 };
   }
 
   const sortMap: Record<string, 1 | -1> =
@@ -151,11 +164,12 @@ export default async function SearchPage({
               ? { boughtInPastMonth: -1 }
               : { ratingCount: -1 };
 
-  const docs = (await ProductModel.find(filter)
-    .sort(sortMap)
-    .limit(40)
-    .lean()
-    .exec()) as unknown as Array<Product & { _id: unknown }>;
+  const [docs, totalDocs] = await Promise.all([
+    (ProductModel.find(filter).sort(sortMap).limit(40).lean().exec()) as unknown as Promise<
+      Array<Product & { _id: unknown }>
+    >,
+    ProductModel.countDocuments(filter).exec(),
+  ]);
 
   const cartState = await getCartState();
   const qtyBySku = new Map<string, number>();
@@ -164,17 +178,23 @@ export default async function SearchPage({
   }
 
   const resultsHeading = q
-    ? `${docs.length === 0 ? 0 : 1}-${docs.length} of ${docs.length} results for "${q}"${pillar ? ` + ${pillar}` : ""}`
-    : `${docs.length} results${department !== "all" ? ` in ${department}` : ""}`;
+    ? `${totalDocs === 0 ? 0 : 1}-${Math.min(totalDocs, docs.length)} of ${totalDocs} results for "${q}"${pillar ? ` + ${pillar}` : ""}`
+    : `${totalDocs} results${department !== "all" ? ` in ${department}` : ""}`;
 
   const priceFilterSet = !Number.isNaN(minPrice) || !Number.isNaN(maxPrice);
 
   return (
     <div className="max-w-[1500px] mx-auto px-3 py-3 min-h-screen">
+      <h1 className="sr-only">{resultsHeading}</h1>
       {/* Header: results count + sort */}
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
         <p className="text-[13px] text-muted">{resultsHeading}</p>
-        <SearchSort q={q} department={department} sort={sort} />
+        <SearchSort
+          q={q}
+          department={department}
+          sort={sort}
+          sp={sp}
+        />
       </div>
 
       {/* Narrow your search pills */}
@@ -312,8 +332,10 @@ export default async function SearchPage({
                     listPriceCents={first?.listPriceCents ?? undefined}
                     image={first?.images?.[0] ?? d.images?.[0] ?? ""}
                     variantSku={first?.sku ?? ""}
+                    stock={first?.stock ?? 0}
                     carbonImpact={d.carbonImpact}
                     initialQty={qtyBySku.get(first?.sku ?? "") ?? 0}
+                    deliveryDate={deliveryPromisesPage}
                   />
                 );
               })

@@ -8,7 +8,7 @@ import { ProductView, type ProductViewData, type ProductVariantView } from "@/co
 import { ProductsHeader } from "@/components/ProductsHeader";
 import { Reviews, type ReviewView } from "@/components/Reviews";
 import { Shelf } from "@/components/Shelf";
-import { formatThousands, formatRating } from "@/lib/format";
+import { formatThousands, formatRating, deliveryPromises } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -136,7 +136,11 @@ export default async function ProductPage({
       />
 
       <div className="mt-4">
-        <ProductView product={serializeProduct(doc)} initialQtyBySku={initialQtyBySku} />
+        <ProductView
+          product={serializeProduct(doc)}
+          initialQtyBySku={initialQtyBySku}
+          deliveryDate={deliveryPromises()}
+        />
       </div>
 
       {/* Product details */}

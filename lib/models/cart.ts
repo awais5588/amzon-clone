@@ -16,6 +16,8 @@ const cartSchema = new Schema(
   {
     userId: { type: String, required: true, unique: true },
     items: { type: [cartItemSchema], default: [] },
+    saved: { type: [cartItemSchema], default: [] },
+    isGift: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

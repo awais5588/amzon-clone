@@ -15,10 +15,12 @@ export function SearchSort({
   q,
   department,
   sort,
+  sp,
 }: {
   q?: string;
   department?: string;
   sort: string;
+  sp: Record<string, string | string[] | undefined>;
 }) {
   const router = useRouter();
   return (
@@ -28,11 +30,24 @@ export function SearchSort({
       </label>
       <select
         id="sort-select"
-        defaultValue={sort}
+        value={sort}
         onChange={(e) => {
           const params = new URLSearchParams();
-          if (q) params.set("q", q);
-          if (department && department !== "all") params.set("department", department);
+          for (const k of [
+            "q",
+            "department",
+            "p",
+            "rating",
+            "freeship",
+            "delivery",
+            "minPrice",
+            "maxPrice",
+          ]) {
+            const v = Array.isArray(sp[k]) ? (sp[k][0] ?? "") : (sp[k] ?? "");
+            if (v) params.set(k, v);
+          }
+          if (!q && !params.has("q")) params.delete("q");
+          if (department === "all") params.delete("department");
           params.set("sort", e.target.value);
           router.push(`/search?${params.toString()}`);
         }}

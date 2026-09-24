@@ -27,7 +27,8 @@ export async function connectDB(): Promise<typeof mongoose> {
     cache.conn = await cache.promise;
   } catch (err) {
     cache.promise = null;
-    console.error("[mongoose] connection failed:", MONGODB_URI, (err as Error).message);
+    const safe = MONGODB_URI.replace(/\/\/[^@]+@/, "//***:***@");
+    console.error("[mongoose] connection failed:", safe, (err as Error).message);
     throw err;
   }
   return cache.conn;

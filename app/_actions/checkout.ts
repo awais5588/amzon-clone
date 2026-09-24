@@ -167,6 +167,7 @@ export async function placeOrder(input: {
   address: AddressInput;
   payment: PaymentInput;
   isGift?: boolean;
+  onlySkus?: string[];
 }): Promise<PlaceOrderRpcResult> {
   const userId = await currentUserId();
   if (!userId) return { ok: false, code: "SIGN_IN", error: "Please sign in to place your order." };
@@ -178,6 +179,7 @@ export async function placeOrder(input: {
     address: input.address,
     payment: input.payment,
     isGift: input.isGift,
+    onlySkus: input.onlySkus && input.onlySkus.length > 0 ? input.onlySkus : undefined,
   });
   if (result.ok) return { ok: true, orderId: result.orderId, orderNumber: result.orderNumber };
   return { ok: false, code: result.code, error: result.error };

@@ -7,15 +7,15 @@ import { fetchProductsBySlugs, productToCard } from "@/lib/products";
 export const dynamic = "force-dynamic";
 
 const PRIME_PROMOS = [
-  { eyes: "The fall edit", note: "Shop premium brands", img: "fall-edit" },
-  { eyes: "Shop Halloween", note: "candy picks", img: "halloween-candy" },
-  { eyes: "New sportswear and more", note: "Stay active with Nike", img: "nike-sportswear" },
-  { eyes: "Spend less every day", note: "Customer-loved finds under $20", img: "finds-under-20" },
+  { eyes: "The fall edit", note: "Shop premium brands", img: "fall-edit", href: "/search?q=fall" },
+  { eyes: "Shop Halloween", note: "candy picks", img: "halloween-candy", href: "/search?q=candy" },
+  { eyes: "New sportswear and more", note: "Stay active with Nike", img: "nike-sportswear", href: "/search?q=nike" },
+  { eyes: "Spend less every day", note: "Customer-loved finds under $20", img: "finds-under-20", href: "/search?maxPrice=2000" },
 ];
 
-function PromoCard({ eyes, note, img }: { eyes: string; note: string; img: string }) {
+function PromoCard({ eyes, note, img, href }: { eyes: string; note: string; img: string; href: string }) {
   return (
-    <a href="#" className="group block bg-card p-3 pb-0 rounded-sm shadow-sm hover:shadow-md transition-shadow">
+    <a href={href} className="group block bg-card p-3 pb-0 rounded-sm shadow-sm hover:shadow-md transition-shadow">
       <p className="font-bold text-[15px] leading-snug text-headline">{eyes}</p>
       <p className="text-[13px] text-muted mb-2">{note}</p>
       <div className="overflow-hidden">
@@ -64,26 +64,19 @@ async function DiscoverShelf() {
     "lego-botanical-roses",
     "nike-running-shirt",
     "stanley-quencher-tumbler",
+    "kindle-paperwhite-16gb",
   ]);
-  const staticWatch: ProductCardData = {
-    slug: "apple-watch-series-12",
-    title: "Apple Watch Series 12 GPS 42mm, Midnight aluminum with Midnight Sport Loop",
-    image: "https://picsum.photos/seed/apple-watch-s12/400/400",
-    priceCents: 42900,
-    listPriceCents: 44900,
-    badge: "Sponsored",
-    subtitle: "",
-  };
   const candies: ProductCardData[] = [];
-  for (const s of ["sour-patch-kids", "lego-botanical-roses", "nike-running-shirt", "stanley-quencher-tumbler"]) {
+  for (const s of ["sour-patch-kids", "lego-botanical-roses", "nike-running-shirt", "stanley-quencher-tumbler", "kindle-paperwhite-16gb"]) {
     if (bySlug[s]) candies.push(productToCard(bySlug[s]));
   }
-  return <Shelf title="You might like" note="Sponsored · picks we think you'll love" cards={[...candies, staticWatch]} />;
+  return <Shelf title="You might like" note="Sponsored · picks we think you'll love" cards={candies} />;
 }
 
 export default async function Home() {
   return (
     <div className="min-h-screen">
+      <h1 className="sr-only">Amazon. Shop today&apos;s deals, electronics, books and more.</h1>
       {/* Hero: Prime focus column + promo grid */}
       <div className="max-w-[1500px] mx-auto px-3 py-3">
         <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-3">

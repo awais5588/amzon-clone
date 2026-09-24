@@ -1,5 +1,5 @@
 import "server-only";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { connectDB } from "@/lib/mongoose";
@@ -12,7 +12,23 @@ import {
 } from "./session-core";
 
 export const SESSION_COOKIE = "amz_sid";
-const BASE_OPTS = { httpOnly: true, sameSite: "lax" as const, path: "/" };
+
+async function cookieOpts(maxAge?: number): Promise<{
+  httpOnly: boolean;
+  sameSite: "lax";
+  secure: boolean;
+  path: string;
+  maxAge?: number;
+}> {
+  let secure = process.env.NODE_ENV === "production";
+  try {
+    const h = await headers();
+    if (h.get("x-forwarded-proto") === "https") secure = true;
+  } catch {
+    // headers() is only available within a request scope.
+  }
+  return { httpOnly: true, sameSite: "lax", secure, path: "/", ...(maxAge !== undefined ? { maxAge } : {}) };
+}
 
 async function readCookieToken(): Promise<string | undefined> {
   const store = await cookies();
@@ -21,7 +37,9 @@ async function readCookieToken(): Promise<string | undefined> {
 
 function clearCookie(): Promise<void> {
   return cookies().then((store) => {
-    store.set(SESSION_COOKIE, "", { ...BASE_OPTS, maxAge: 0 });
+    return cookieOpts(0).then((opts) => {
+      store.set(SESSION_COOKIE, "", opts);
+    });
   });
 }
 
@@ -32,7 +50,7 @@ export async function issueSessionToken(userId: string): Promise<string> {
 export async function createSession(userId: string): Promise<void> {
   const token = await issueSessionToken(userId);
   const store = await cookies();
-  store.set(SESSION_COOKIE, token, { ...BASE_OPTS, maxAge: SESSION_TTL_MS / 1000 });
+  store.set(SESSION_COOKIE, token, await cookieOpts(SESSION_TTL_MS / 1000));
 }
 
 export async function revokeSessionToken(token: string): Promise<void> {

@@ -106,7 +106,7 @@ export function GlobalNav({ user }: { user: { name: string } | null }) {
 
         <Link
           href="/orders"
-          className="flex items-center border border-transparent hover:border-white px-2 leading-tight"
+          className="flex items-center border border-transparent hover:border-white px-2 leading-tight max-lg:hidden"
         >
           <span>
             <span className="block text-xs text-[#cccccc]">Returns</span>
@@ -124,8 +124,8 @@ export function GlobalNav({ user }: { user: { name: string } | null }) {
       </div>
 
       {/* Services strip */}
-      <div className="bg-navbar-2 text-white text-[13px] flex items-center gap-3 h-9 px-4">
-        <span className="flex items-center gap-1.5 font-bold cursor-pointer hover:text-[#febd69] whitespace-nowrap">
+      <div className="bg-navbar-2 text-white text-[13px] flex items-center gap-3 h-9 px-4 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <span className="flex items-center gap-1.5 font-bold cursor-pointer hover:text-[#febd69]">
           <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor" aria-hidden="true">
             <path d="M3 6h18v2H3zM3 11h18v2H3zM3 16h18v2H3z" />
           </svg>
@@ -135,22 +135,19 @@ export function GlobalNav({ user }: { user: { name: string } | null }) {
         {NAV_LINKS.map((label) => (
           <span
             key={label}
-            className="cursor-pointer whitespace-nowrap px-0.5 border border-transparent hover:border-white"
+            className="cursor-pointer px-0.5 border border-transparent hover:border-white"
           >
             {label}
           </span>
         ))}
 
-        <span className="flex-1" />
+        <span className="flex-1 min-w-4" />
 
-        <span className="flex items-center gap-1.5 cursor-pointer whitespace-nowrap" title="Compare items">
+        <span className="flex items-center gap-1.5 cursor-pointer" title="Compare items">
           <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
             <path d="M12 3v18M5 8l-2 4h4zM19 8l-2 4h4z" strokeLinejoin="round" />
           </svg>
           VS
-        </span>
-        <span className="cursor-pointer whitespace-nowrap border border-transparent hover:border-white font-semibold tracking-wide">
-          ⏱ 03:08
         </span>
       </div>
     </header>

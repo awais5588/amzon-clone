@@ -40,7 +40,7 @@ export function MiniCart() {
       </p>
       <a
         href="/cart"
-        className="block text-center bg-cta hover:bg-[#e6c200] border border-cta-border text-headline rounded-[6px] px-3 py-2 text-[13px] font-medium shadow-sm mt-3"
+        className="block text-center bg-cta hover:bg-[#e6c200] border border-cta-border text-headline rounded-[8px] px-3 py-2 text-[13px] font-medium shadow-sm mt-3"
       >
         Go to Cart
       </a>

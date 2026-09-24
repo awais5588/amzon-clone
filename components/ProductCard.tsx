@@ -27,7 +27,7 @@ export function ProductCard({ product }: { product: ProductCardData }) {
           </span>
         )}
         <Image
-          src={product.image}
+          src={product.image || "/images/placeholder.png"}
           alt={product.title}
           width={400}
           height={400}

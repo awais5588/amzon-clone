@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { formatPrice, deliveryPromises } from "@/lib/format";
+import { formatPrice, deliveryPromises, type DeliveryPromise } from "@/lib/format";
 import { addToCart } from "@/app/_actions/cart";
-import { setCartSummary } from "@/lib/cart-client";
+import { setCartSummary, subscribeCartSummary } from "@/lib/cart-client";
 
 export interface ProductVariantView {
   label: string;
@@ -47,9 +47,11 @@ function ChevronDown() {
 export function ProductView({
   product,
   initialQtyBySku,
+  deliveryDate,
 }: {
   product: ProductViewData;
   initialQtyBySku: Record<string, number>;
+  deliveryDate?: DeliveryPromise;
 }) {
   const router = useRouter();
   const [sku, setSku] = useState(product.variants[0]?.sku ?? "");
@@ -57,13 +59,33 @@ export function ProductView({
   const [imageIndex, setImageIndex] = useState(0);
   const [pending, setPending] = useState<null | "add" | "buy">(null);
   const [feedback, setFeedback] = useState<"added" | "error" | null>(null);
-  const [promise] = useState(() => deliveryPromises());
+  const [inCart, setInCart] = useState(initialQtyBySku[product.variants[0]?.sku ?? ""] ?? 0);
+  const [promise] = useState<DeliveryPromise>(() => deliveryDate ?? deliveryPromises());
+
+  useEffect(() => {
+    let active = true;
+    const unsub = subscribeCartSummary((s) => {
+      if (!active) return;
+      const item = s.items?.find((i) => i.variantSku === sku);
+      setInCart(item?.qty ?? 0);
+    });
+    void import("@/app/_actions/cart").then((m) =>
+      m.getCartState().then((s) => {
+        if (!active) return;
+        const item = s.items.find((i) => i.variantSku === sku);
+        setInCart(item?.qty ?? 0);
+      })
+    );
+    return () => {
+      active = false;
+      unsub();
+    };
+  }, [sku]);
 
   const variant = useMemo(
     () => product.variants.find((v) => v.sku === sku) ?? product.variants[0],
     [product.variants, sku]
   );
-  const inCart = initialQtyBySku[variant?.sku ?? ""] ?? 0;
 
   const images = useMemo(() => {
     const list = variant?.images?.length ? variant.images : product.images;
@@ -256,7 +278,7 @@ export function ProductView({
             type="button"
             disabled={outOfStock || pending !== null}
             onClick={() => void run("add")}
-            className="bg-cta hover:bg-[#e6c200] border border-cta-border text-headline rounded-[20px] px-4 py-2 text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="bg-cta hover:bg-[#e6c200] border border-cta-border text-headline rounded-[8px] px-4 py-2 text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Add to Cart
           </button>
@@ -264,7 +286,7 @@ export function ProductView({
             type="button"
             disabled={outOfStock || pending !== null}
             onClick={() => void run("buy")}
-            className="bg-buy hover:bg-buy-hover border border-[#a35c00] text-headline rounded-[20px] px-4 py-2 text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="bg-buy hover:bg-buy-hover border border-[#a35c00] text-headline rounded-[8px] px-4 py-2 text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Buy Now
           </button>

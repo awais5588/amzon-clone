@@ -19,8 +19,10 @@ export interface SerpResultCardProps {
   listPriceCents?: number;
   image: string;
   variantSku: string;
+  stock: number;
   carbonImpact?: string;
   initialQty: number;
+  deliveryDate?: { members: string; nonMembers: string };
 }
 
 export function SerpResultCard({
@@ -35,12 +37,17 @@ export function SerpResultCard({
   listPriceCents,
   image,
   variantSku,
+  stock,
   carbonImpact = "Low",
   initialQty,
+  deliveryDate,
 }: SerpResultCardProps) {
   const [qty, setQty] = useState(initialQty);
   const [pending, setPending] = useState(false);
-  const [promise] = useState(() => deliveryPromises());
+  const [promise] = useState<{ members: string; nonMembers: string }>(
+    () => deliveryDate ?? deliveryPromises()
+  );
+  const outOfStock = stock <= 0;
 
   const apply = useCallback((nextQty: number) => {
     setQty(nextQty);
@@ -83,6 +90,8 @@ export function SerpResultCard({
     [run, apply, productId, variantSku, qty]
   );
 
+  const canIncrease = !outOfStock && qty < stock;
+
   useEffect(() => {
     let active = true;
     void getCartState().then((s) => {
@@ -100,7 +109,7 @@ export function SerpResultCard({
     <article className="flex gap-3 bg-card rounded-sm shadow-sm hover:shadow-md transition-shadow p-2.5">
       <a href={`/product/${slug}`} className="shrink-0 w-36 sm:w-48 aspect-square bg-[#f7fafa] overflow-hidden rounded-sm">
         <Image
-          src={image}
+          src={image || "/images/placeholder.png"}
           alt={title}
           width={200}
           height={200}
@@ -140,6 +149,12 @@ export function SerpResultCard({
           )}
         </div>
 
+        <p className={outOfStock ? "text-[13px] text-[#b12704] font-medium mt-1" : "text-[13px] text-[#007600] font-medium mt-1"}>
+          {outOfStock
+            ? "Currently unavailable."
+            : "In Stock"}
+        </p>
+
         <div className="text-[13px] leading-tight mt-1">
           <p className="text-link underline-offset-2 hover:underline">{promise.members}</p>
           <p className="text-muted">{promise.nonMembers}</p>
@@ -150,7 +165,12 @@ export function SerpResultCard({
         </p>
 
         <div className="mt-1.5">
-          {qty === 0 ? (
+          {outOfStock ? (
+            <p className="text-[13px] text-muted">
+              <span className="text-link underline-offset-2 hover:underline">See options</span> ·{" "}
+              <span className="text-link underline-offset-2 hover:underline">Other sellers</span>
+            </p>
+          ) : qty === 0 ? (
             <button
               type="button"
               onClick={() => void handleAdd()}
@@ -178,7 +198,7 @@ export function SerpResultCard({
                 <button
                   type="button"
                   aria-label="Increase quantity"
-                  disabled={pending}
+                  disabled={pending || !canIncrease}
                   onClick={() => void handleStep(1)}
                   className="px-2.5 py-1 text-lg leading-none hover:bg-row-hover disabled:opacity-50"
                 >

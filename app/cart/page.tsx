@@ -2,7 +2,9 @@ import type { Product } from "@/lib/models";
 import { ProductModel } from "@/lib/models";
 import { connectDB } from "@/lib/mongoose";
 import { getCartState } from "@/lib/cart";
+import { getSessionUser } from "@/lib/auth/session";
 import { fetchProductsByIds, productToCard } from "@/lib/products";
+import { freeDeliveryDate } from "@/lib/format";
 import { CartView, type SkuInfo } from "@/components/CartView";
 import { Shelf } from "@/components/Shelf";
 
@@ -21,7 +23,7 @@ async function youMightAlsoLike() {
 }
 
 export default async function CartPage() {
-  const cart = await getCartState();
+  const [cart, sessionUser] = await Promise.all([getCartState(), getSessionUser()]);
   const items = cart.items;
   const totalQty = cart.totalQty;
   const subtotalCents = cart.subtotalCents;
@@ -48,9 +50,12 @@ export default async function CartPage() {
       <div className="bg-[#f0f2f2]">
         <div className="max-w-[1100px] mx-auto px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-[13px]">
           <p>
-            <span className="font-semibold text-headline">Awais</span>, get a{" "}
+            <span className="font-semibold text-headline">
+              {sessionUser?.name ?? "Sign in for"}
+            </span>
+            {sessionUser ? ", get a" : " a"}{" "}
             <span className="font-semibold text-headline">$50 Amazon Gift Card</span> upon approval for
-            Amazon Visa. <span className="text-link hover:underline cursor-pointer">Find out how</span>
+            Amazon Visa. <span className="text-link">Find out how</span>
           </p>
           <p className="text-faint">
             Apply and pay only{" "}
@@ -73,7 +78,10 @@ export default async function CartPage() {
             subtotalCents,
             qualifiesForFreeDelivery: subtotalCents > 0,
             items,
+            saved: cart.saved,
+            isGift: cart.isGift,
           }}
+          deliveryDate={freeDeliveryDate()}
         />
 
         {related.length > 0 && (

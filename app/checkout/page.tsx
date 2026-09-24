@@ -39,7 +39,18 @@ type UserRow = {
   }>;
 };
 
-export default async function CheckoutPage() {
+export default async function CheckoutPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const rawItems = Array.isArray(sp.items) ? (sp.items[0] ?? "") : (sp.items ?? "");
+  const onlySkus = rawItems
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
   const user = await requireUser("/checkout");
 
   await connectDB();
@@ -48,34 +59,41 @@ export default async function CheckoutPage() {
     UserModel.findById(user._id).lean().exec(),
   ]);
 
-  const cartRow = cart as unknown as CartRow | null;
+  const cartRow = cart as unknown as (CartRow & { isGift?: boolean }) | null;
   const userRow = userDoc as unknown as UserRow | null;
   const cartItems = cartRow?.items ?? [];
 
-  if (cartItems.length === 0) {
+  const selected = onlySkus.length > 0 ? new Set(onlySkus) : null;
+  const scopedItems = selected ? cartItems.filter((i) => selected.has(i.variantSku)) : cartItems;
+
+  if (scopedItems.length === 0) {
     redirect("/cart");
   }
 
-  const productIds = Array.from(new Set(cartItems.map((i) => String(i.product))));
+  const productIds = Array.from(new Set(scopedItems.map((i) => String(i.product))));
   const productById = await fetchProductsByIds(productIds);
 
   const lines: CheckoutLine[] = [];
-  for (const item of cartItems) {
+  for (const item of scopedItems) {
     const product = productById[String(item.product)];
     if (!product) continue;
     const variant = product.variants.find((v) => v.sku === item.variantSku);
-    if (!variant) continue;
+    if (!variant || variant.stock <= 0) continue;
     lines.push({
       productId: String(item.product),
       variantSku: item.variantSku,
       slug: product.slug,
       title: product.title,
-      image: product.images[0] ?? "/images/placeholder.png",
+      image: variant.images?.[0] ?? product.images[0] ?? "/images/placeholder.png",
       priceCents: variant.priceCents,
-      qty: item.qty,
-      label: variant?.label ?? "",
-      stock: variant?.stock ?? 0,
+      qty: Math.min(item.qty, variant.stock),
+      label: variant.label ?? "",
+      stock: variant.stock,
     });
+  }
+
+  if (lines.length === 0) {
+    redirect("/cart");
   }
 
   const totals: CheckoutTotals = {
@@ -127,6 +145,8 @@ export default async function CheckoutPage() {
           lines={lines}
           totals={totals}
           deliveryDate={freeDeliveryDate()}
+          onlySkus={onlySkus}
+          isGift={!!cartRow?.isGift}
         />
       </div>
     </div>

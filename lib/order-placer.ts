@@ -25,6 +25,8 @@ export interface PlaceOrderParams {
   address: AddressInput;
   payment: PaymentInput;
   isGift?: boolean;
+  /** Restrict the purchase to these variant skus (cart selection); others stay in the cart. */
+  onlySkus?: string[];
 }
 
 export type PlaceOrderResult =
@@ -110,7 +112,67 @@ export async function placeOrderCore(params: PlaceOrderParams): Promise<PlaceOrd
     return { ok: false, code: "CART_EMPTY", error: "Your cart is empty. Add items before checking out." };
   }
 
-  const subtotalCents = items.reduce((sum, i) => sum + i.priceCents * i.qty, 0);
+  type LiveLine = {
+    product: unknown;
+    variantSku: string;
+    title: string;
+    image: string;
+    priceCents: number;
+    qty: number;
+  };
+
+  const products = (await ProductModel.find({ _id: { $in: items.map((i) => String(i.product)) } })
+    .lean()
+    .exec()) as unknown as Array<{
+    _id: unknown;
+    title: string;
+    images?: string[];
+    variants: Array<{
+      sku: string;
+      stock: number;
+      priceCents: number;
+      listPriceCents?: number;
+      images?: string[];
+    }>;
+  }>;
+  const productById = new Map(products.map((p) => [String(p._id), p]));
+
+  // Re-resolve every line against live product/variant data so IDs, titles, images and
+  // prices always match the catalog. Unresolvable lines and out-of-stock lines are dropped.
+  const live: LiveLine[] = [];
+  let hadUnavailable = false;
+  for (const item of items) {
+    const product = productById.get(String(item.product));
+    if (!product) continue;
+    const variant = product.variants.find((v) => v.sku === item.variantSku);
+    if (!variant || variant.stock <= 0) {
+      hadUnavailable = true;
+      continue;
+    }
+    live.push({
+      product: String(product._id),
+      variantSku: variant.sku,
+      title: product.title,
+      image: variant.images?.[0] ?? product.images?.[0] ?? "",
+      priceCents: variant.priceCents,
+      qty: Math.min(item.qty, variant.stock),
+    });
+  }
+
+  const onlySkus = params.onlySkus ? new Set(params.onlySkus) : null;
+  const lines = onlySkus ? live.filter((l) => onlySkus.has(l.variantSku)) : live;
+  if (lines.length === 0) {
+    if (!onlySkus && hadUnavailable) {
+      return {
+        ok: false,
+        code: "OUT_OF_STOCK",
+        error: "An item in your cart is no longer available in the requested quantity.",
+      };
+    }
+    return { ok: false, code: "CART_EMPTY", error: "Your cart is empty. Add items before checking out." };
+  }
+
+  const subtotalCents = lines.reduce((sum, i) => sum + i.priceCents * i.qty, 0);
   const shippingCents = 0;
   const taxCents = 0;
   const totalCents = subtotalCents + shippingCents + taxCents;
@@ -123,27 +185,10 @@ export async function placeOrderCore(params: PlaceOrderParams): Promise<PlaceOrd
     };
   }
 
-  const products = (await ProductModel.find({ _id: { $in: items.map((i) => String(i.product)) } })
-    .lean()
-    .exec()) as unknown as Array<{ variants: Array<{ sku: string; stock: number }> }>;
-  const stockBySku = new Map<string, number>();
-  for (const p of products) {
-    for (const v of p.variants) stockBySku.set(v.sku, v.stock);
-  }
-  for (const i of items) {
-    if ((stockBySku.get(i.variantSku) ?? 0) < i.qty) {
-      return {
-        ok: false,
-        code: "OUT_OF_STOCK",
-        error: "An item in your cart is no longer available in the requested quantity.",
-      };
-    }
-  }
-
   // Conditional per-line stock decrement; rolls back on any failure.
   const decremented: Array<{ sku: string; qty: number }> = [];
   try {
-    for (const i of items) {
+    for (const i of lines) {
       const res = await ProductModel.updateOne(
         {
           _id: String(i.product),
@@ -159,7 +204,7 @@ export async function placeOrderCore(params: PlaceOrderParams): Promise<PlaceOrd
       orderKey: params.orderKey,
       user: params.userId,
       status: "Pending",
-      items: items.map((i) => ({
+      items: lines.map((i) => ({
         product: i.product,
         variantSku: i.variantSku,
         title: i.title,
@@ -201,7 +246,15 @@ export async function placeOrderCore(params: PlaceOrderParams): Promise<PlaceOrd
     return { ok: false, code: "VALIDATION", error: "We could not place your order. Please try again." };
   }
 
-  await CartModel.deleteOne({ userId: `user:${params.userId}` });
+  if (onlySkus) {
+    // Partial purchase: keep the unselected lines in the cart.
+    await CartModel.updateOne(
+      { userId: `user:${params.userId}` },
+      { $pull: { items: { variantSku: { $in: Array.from(onlySkus) } } } }
+    );
+  } else {
+    await CartModel.deleteOne({ userId: `user:${params.userId}` });
+  }
   const placed = (await OrderModel.findOne({ orderKey: params.orderKey })
     .lean()
     .exec()) as unknown as OrderRow | null;

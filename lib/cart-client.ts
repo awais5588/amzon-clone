@@ -12,12 +12,16 @@ export interface CartSummaryState {
   subtotalCents: number;
   qualifiesForFreeDelivery: boolean;
   items?: CartLineState[];
+  saved?: CartLineState[];
+  isGift?: boolean;
 }
 let current: CartSummaryState = {
   totalQty: 0,
   subtotalCents: 0,
   qualifiesForFreeDelivery: false,
   items: [],
+  saved: [],
+  isGift: false,
 };
 const listeners = new Set<(s: CartSummaryState) => void>();
 
@@ -26,7 +30,12 @@ export function getCartSummaryState(): CartSummaryState {
 }
 
 export function setCartSummary(s: CartSummaryState): void {
-  current = { ...s, items: s.items ?? current.items };
+  current = {
+    ...s,
+    items: s.items ?? current.items,
+    saved: s.saved ?? current.saved,
+    isGift: s.isGift ?? current.isGift,
+  };
   for (const l of listeners) l(current);
 }
 

@@ -68,12 +68,16 @@ export function CheckoutFlow({
   lines,
   totals,
   deliveryDate,
+  onlySkus,
+  isGift,
 }: {
   addresses: CheckoutAddress[];
   paymentMethods: CheckoutPaymentMethod[];
   lines: CheckoutLine[];
   totals: CheckoutTotals;
   deliveryDate: string;
+  onlySkus?: string[];
+  isGift?: boolean;
 }) {
   const router = useRouter();
   const [orderKey] = useState(() => crypto.randomUUID());
@@ -175,9 +179,12 @@ export function CheckoutFlow({
         phone: selectedAddress!.phone,
       },
       payment: { brand: selectedMethod!.brand, last4: selectedMethod!.last4 },
+      onlySkus,
+      isGift,
     });
     if (res.ok) {
-      setCartSummary({ totalQty: 0, subtotalCents: 0, qualifiesForFreeDelivery: false, items: [] });
+      const state = await (await import("@/app/_actions/cart")).getCartState();
+      setCartSummary(state);
       router.push(`/order-confirmation/${res.orderId}`);
       return;
     }
@@ -192,7 +199,7 @@ export function CheckoutFlow({
         {/* 1. Shipping address */}
         <section className="bg-card rounded-sm shadow-sm p-4">
           <div className="flex items-center gap-2 border-b border-border pb-2">
-            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#ddd] text-[13px] font-semibold text-headline">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#007185] text-white text-[13px] font-semibold">
               1
             </span>
             <h2 className="text-lg font-medium text-headline">
@@ -340,7 +347,7 @@ export function CheckoutFlow({
         {/* 2. Payment method */}
         <section className="bg-card rounded-sm shadow-sm p-4">
           <div className="flex items-center gap-2 border-b border-border pb-2">
-            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#ddd] text-[13px] font-semibold text-headline">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#007185] text-white text-[13px] font-semibold">
               2
             </span>
             <h2 className="text-lg font-medium text-headline">Payment method</h2>
@@ -468,7 +475,7 @@ export function CheckoutFlow({
         {/* 3. Review items and shipping */}
         <section className="bg-card rounded-sm shadow-sm p-4">
           <div className="flex items-center gap-2 border-b border-border pb-2">
-            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#ddd] text-[13px] font-semibold text-headline">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#007185] text-white text-[13px] font-semibold">
               3
             </span>
             <h2 className="text-lg font-medium text-headline">Review items and shipping</h2>
@@ -491,8 +498,12 @@ export function CheckoutFlow({
                   <p className="text-[12px] text-muted">
                     Sold by Amazon clone · Quantity: {l.qty}
                   </p>
-                  <p className="text-[12px] text-[#007600] font-medium">
-                    In Stock · FREE delivery {deliveryDate}
+                  <p className="text-[12px] font-medium">
+                    {l.stock <= 0 ? (
+                      <span className="text-[#b12704]">Currently unavailable</span>
+                    ) : (
+                      <span className="text-[#007600]">In Stock · FREE delivery {deliveryDate}</span>
+                    )}
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
@@ -546,7 +557,7 @@ export function CheckoutFlow({
             type="button"
             disabled={!canPlace}
             onClick={() => void submitOrder()}
-            className="w-full mt-3 bg-cta hover:bg-[#e6c200] border border-cta-border text-headline rounded-[20px] px-4 py-2 text-[13px] font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full mt-3 bg-cta hover:bg-[#e6c200] border border-cta-border text-headline rounded-[8px] px-4 py-2 text-[13px] font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {placing ? "Placing your order…" : "Place your order"}
           </button>

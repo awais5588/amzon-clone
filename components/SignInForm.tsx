@@ -17,14 +17,17 @@ export function SignInForm({ next }: { next: string }) {
     if (busy) return;
     setBusy(true);
     setError(null);
-    const res = await signIn({ email, password });
-    setBusy(false);
-    if (!res.ok) {
-      setError(res.error);
-      return;
+    try {
+      const res = await signIn({ email, password });
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      router.replace(next);
+      router.refresh();
+    } finally {
+      setBusy(false);
     }
-    router.replace(next);
-    router.refresh();
   }
 
   return (
@@ -73,7 +76,7 @@ export function SignInForm({ next }: { next: string }) {
           <button
             type="submit"
             disabled={busy}
-            className="mt-4 w-full rounded-[6px] bg-cta hover:bg-[#e6c200] border border-cta-border text-headline text-[13px] font-medium py-1.5 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="mt-4 w-full rounded-[8px] bg-cta hover:bg-[#e6c200] border border-cta-border text-headline text-[13px] font-medium py-1.5 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {busy ? "Signing in…" : "Sign in"}
           </button>
@@ -92,7 +95,7 @@ export function SignInForm({ next }: { next: string }) {
         <button
           type="button"
           onClick={() => router.push(`/signup?next=${encodeURIComponent(next)}`)}
-          className="mt-3 w-full rounded-[6px] bg-[#f0f2f2] hover:bg-[#e3e6e6] border border-border text-[13px] py-1.5 cursor-pointer"
+          className="mt-3 w-full rounded-[8px] bg-[#f0f2f2] hover:bg-[#e3e6e6] border border-border text-[13px] py-1.5 cursor-pointer"
         >
           Create your Amazon account
         </button>
