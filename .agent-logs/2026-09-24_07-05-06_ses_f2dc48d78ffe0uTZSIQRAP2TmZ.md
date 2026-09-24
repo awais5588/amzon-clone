@@ -5,9 +5,9 @@ author: Awais Javed
 model: opencode/big-pickle
 tool: opencode
 project: amzonClone
-total_exchanges: 10
+total_exchanges: 12
 first_prompt_time: 2026-09-24T07:05:06.461Z
-last_prompt_time: 2026-09-24T08:07:08.750Z
+last_prompt_time: 2026-09-24T08:25:31.911Z
 ---
 
 # Session Log - 2026-09-24
@@ -390,7 +390,46 @@ Work incrementally and commit meaningful changes along the way. Keep `.agent-log
 Start with P1 only, then report what you completed before moving to the next phase. 
 
 [LOG_ENTRY type=RESPONSE num=10 session=ses_f2dc]
-timestamp: 2026-09-24T08:21:40.768Z
+timestamp: 2026-09-24T08:22:22.806Z
 model: opencode/big-pickle
 
-P1 fully green: seed (17 products, 33 variants, 10 reviews), clean lint, successful build. Finalizing with README run notes and the commit.
+Committing P1 (scaffold + DB layer + seed + screenshots).
+
+[LOG_ENTRY type=PROMPT num=11 session=ses_f2dc]
+timestamp: 2026-09-24T08:24:11.833Z
+model: opencode/big-pickle
+
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+
+[LOG_ENTRY type=RESPONSE num=11 session=ses_f2dc]
+timestamp: 2026-09-24T08:24:19.103Z
+model: opencode/big-pickle
+
+**P1 complete** (commit `bd86e06`):
+- MongoDB 8.3.11 live on `127.0.0.1:27017` (tarball install — brew blocked by outdated CLT)
+- Next.js 16 + TS + Tailwind v4 scaffold at repo root
+- `lib/mongoose.ts` singleton + 5 models (User/Product/Review/Cart/Order)
+- Seed: **17 products / 33 variants / 5 departments / 10 reviews**, flagship Fire TV Stick 4K Max (4.6★, 82.9K, 10K+ bought, $84.99)
+- Verified: typecheck ✓ lint ✓ build ✓ seed idempotent ✓; screenshots + `.env.example` committed, live capture log interleaved
+
+Stopping here per your directive. Approve to start **P2** (global nav + home page per `recon/home.png`)?
+
+[LOG_ENTRY type=PROMPT num=12 session=ses_f2dc]
+timestamp: 2026-09-24T08:25:31.911Z
+model: opencode/big-pickle
+
+Approved. Start P2.
+
+Implement the global navigation and Home page according to the approved recon plan and `/recon/home.png`.
+
+Keep the implementation closely aligned with the screenshot and the existing product-map/recon notes. Use the existing Next.js + TypeScript + Tailwind + MongoDB architecture.
+
+Continue committing meaningful changes with `.agent-logs/` interleaved. Do not modify or delete previous capture logs.
+
+After completing P2, run the relevant checks, report what was completed, and stop for approval before starting P3. 
+
+[LOG_ENTRY type=RESPONSE num=12 session=ses_f2dc]
+timestamp: 2026-09-24T08:28:26.833Z
+model: opencode/big-pickle
+
+Now a helper mapping Product docs → card data, then the Home page.

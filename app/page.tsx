@@ -1,69 +1,164 @@
 import Image from "next/image";
+import type { ProductCardData } from "@/components/ProductCard";
+import { ProductCard } from "@/components/ProductCard";
+import { formatPrice } from "@/lib/format";
+import { fetchProductsBySlugs, productToCard } from "@/lib/products";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+const PRIME_PROMOS = [
+  { eyes: "The fall edit", note: "Shop premium brands", img: "fall-edit" },
+  { eyes: "Shop Halloween", note: "candy picks", img: "halloween-candy" },
+  { eyes: "New sportswear and more", note: "Stay active with Nike", img: "nike-sportswear" },
+  { eyes: "Spend less every day", note: "Customer-loved finds under $20", img: "finds-under-20" },
+];
+
+function PromoCard({ eyes, note, img }: { eyes: string; note: string; img: string }) {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+    <a href="#" className="group block bg-card p-3 pb-0 rounded-sm shadow-sm hover:shadow-md transition-shadow">
+      <p className="font-bold text-[15px] leading-snug text-headline">{eyes}</p>
+      <p className="text-[13px] text-muted mb-2">{note}</p>
+      <div className="overflow-hidden">
         <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+          src={`https://picsum.photos/seed/${img}/600/400`}
+          alt={eyes}
+          width={600}
+          height={400}
+          className="w-full aspect-[3/2] object-cover group-hover:scale-[1.02] transition-transform"
+          sizes="(min-width:1280px) 25vw, 50vw"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </div>
+    </a>
+  );
+}
+
+function PrimeFocus() {
+  return (
+    <div className="bg-gradient-to-b from-[#2b4c68] to-[#131921] text-white rounded-sm p-5 flex flex-col justify-center gap-1.5 shadow-sm">
+      <p className="text-[13px] text-[#e7f1ff]">Exclusively for members</p>
+      <p className="text-2xl font-semibold leading-tight">Prime Big Deals</p>
+      <p className="text-sm text-[#d3e1ee] mb-2">drop Oct 6-7</p>
+      <span className="inline-flex justify-center bg-cta border border-cta-border text-headline text-sm font-semibold rounded-[4px] px-4 py-1.5 w-fit shadow-sm hover:bg-[#f7ca00]">
+        Join Prime
+      </span>
     </div>
+  );
+}
+
+function Section({ title, note }: { title: string; note?: string }) {
+  return (
+    <div className="mb-3">
+      <h2 className="text-xl font-semibold text-headline">{title}</h2>
+      {note && <p className="text-[13px] text-muted">{note}</p>}
+    </div>
+  );
+}
+
+function Shelf({ title, note, cards }: { title: string; note?: string; cards: ProductCardData[] }) {
+  return (
+    <section className="bg-card rounded-sm shadow-sm px-4 pt-4 pb-5">
+      <Section title={title} note={note} />
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+        {cards.map((c) => (
+          <ProductCard key={c.slug} product={c} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+async function AmazonDevices() {
+  const bySlug = await fetchProductsBySlugs([
+    "fire-tv-stick-4k-max",
+    "fire-tv-stick-4k-plus",
+    "echo-dot-5th-gen",
+    "kindle-paperwhite-16gb",
+  ]);
+  const slugs = ["fire-tv-stick-4k-max", "fire-tv-stick-4k-plus", "echo-dot-5th-gen", "kindle-paperwhite-16gb"];
+  const cards = slugs.filter((s) => bySlug[s]).map((s) => productToCard(bySlug[s]));
+  if (cards.length === 0) return null;
+  return <Shelf title="Top-selling Amazon Devices" cards={cards} />;
+}
+
+async function DiscoverShelf() {
+  const bySlug = await fetchProductsBySlugs([
+    "sour-patch-kids",
+    "lego-botanical-roses",
+    "nike-running-shirt",
+    "stanley-quencher-tumbler",
+  ]);
+  const staticWatch: ProductCardData = {
+    slug: "apple-watch-series-12",
+    title: "Apple Watch Series 12 GPS 42mm, Midnight aluminum with Midnight Sport Loop",
+    image: "https://picsum.photos/seed/apple-watch-s12/400/400",
+    priceCents: 42900,
+    listPriceCents: 44900,
+    badge: "Sponsored",
+    subtitle: "",
+  };
+  const candies: ProductCardData[] = [];
+  for (const s of ["sour-patch-kids", "lego-botanical-roses", "nike-running-shirt", "stanley-quencher-tumbler"]) {
+    if (bySlug[s]) candies.push(productToCard(bySlug[s]));
+  }
+  return <Shelf title="You might like" note="Sponsored · picks we think you'll love" cards={[...candies, staticWatch]} />;
+}
+
+export default async function Home() {
+  return (
+    <div className="min-h-screen">
+      {/* Hero: Prime focus column + promo grid */}
+      <div className="max-w-[1500px] mx-auto px-3 py-3">
+        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-3">
+          <PrimeFocus />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {PRIME_PROMOS.map((p) => (
+              <PromoCard key={p.img} {...p} />
+            ))}
+          </div>
+        </div>
+
+        {/* Candy features */}
+        <section className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <CandyTile slug="brachs-autumn-mix" title="Brach's Autumn Mix" capture="Harvest-time candy favorite" img="brachs-autumn-mix" />
+          <CandyTile slug="sour-patch-kids" title="Sour Patch Kids" capture="Soft & chewy, silly sour" img="sour-patch-kids" />
+        </section>
+
+        <div className="mt-4 space-y-4 pb-6">
+          <AmazonDevices />
+          <DiscoverShelf />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+async function fetchPrice(slug: string): Promise<number> {
+  const bySlug = await fetchProductsBySlugs([slug]);
+  return bySlug[slug]?.variants?.[0]?.priceCents ?? 0;
+}
+
+async function CandyTile({ slug, title, capture, img }: { slug: string; title: string; capture: string; img: string }) {
+  const price = await fetchPrice(slug);
+  return (
+    <a
+      href={`/product/${slug}`}
+      className="group flex items-stretch bg-card rounded-sm shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+    >
+      <div className="w-2/5 overflow-hidden">
+        <Image
+          src={`https://picsum.photos/seed/${img}/400/400`}
+          alt={title}
+          width={400}
+          height={400}
+          className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform"
+        />
+      </div>
+      <div className="flex-1 p-4 flex flex-col justify-center gap-1">
+        <span className="text-[11px] uppercase tracking-wider text-muted">Sponsored</span>
+        <h3 className="font-bold text-headline leading-snug group-hover:text-link group-hover:underline">{title}</h3>
+        <p className="text-[13px] text-muted">{capture}</p>
+        <p className="text-lg font-semibold text-headline mt-1">{formatPrice(price)}</p>
+      </div>
+    </a>
   );
 }
