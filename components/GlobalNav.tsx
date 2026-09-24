@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AmazonLogo } from "./AmazonLogo";
 import { CartBadge } from "./CartBadge";
 import { AccountMenu } from "./AccountMenu";
@@ -103,7 +104,7 @@ export function GlobalNav({ user }: { user: { name: string } | null }) {
 
         <AccountMenu user={user} />
 
-        <a
+        <Link
           href="/orders"
           className="flex items-center border border-transparent hover:border-white px-2 leading-tight"
         >
@@ -111,7 +112,7 @@ export function GlobalNav({ user }: { user: { name: string } | null }) {
             <span className="block text-xs text-[#cccccc]">Returns</span>
             <span className="block text-sm font-bold">& Orders</span>
           </span>
-        </a>
+        </Link>
 
         <a href="/cart" className="flex items-end border border-transparent hover:border-white px-2">
           <span className="relative">

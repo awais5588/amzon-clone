@@ -57,3 +57,27 @@ function monthDayOf(d: Date): string {
 function weekdayMonthDayOf(d: Date): string {
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
+
+/** Estimated arrival date string, e.g. "Mon, Sep 28", computed from an order's placed date. */
+export function etaDate(from: Date | string, etaDays: number): string {
+  const d = new Date(from);
+  d.setDate(d.getDate() + etaDays);
+  return weekdayMonthDayOf(d);
+}
+
+/** Amazon-style display order number derived deterministically from the idempotency key. */
+export function orderDisplayNumber(orderKey: string): string {
+  const digest = (seed: string): string => {
+    let h1 = 0x811c9dc5;
+    let h2 = 0x01000193;
+    for (let i = 0; i < seed.length; i++) {
+      h1 = Math.imul(h1 ^ seed.charCodeAt(i), 16777619);
+      h2 = Math.imul(h2 + seed.charCodeAt(i), 2246822519);
+    }
+    const n1 = Math.abs(h1 % 10000000);
+    const n2 = Math.abs(h2 % 10000000);
+    return `${String(n1).padStart(7, "0")}${String(n2).padStart(7, "0")}`;
+  };
+  const digits = digest(orderKey);
+  return `113-${digits.slice(0, 7)}-${digits.slice(7, 14)}`;
+}

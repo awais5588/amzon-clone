@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireUser } from "@/lib/auth/session";
 import { signOut } from "@/app/_actions/auth";
 
@@ -20,9 +21,14 @@ export default async function AccountPage() {
       <section id="orders" className="mt-4 bg-card rounded-sm shadow-sm p-5">
         <h2 className="text-lg font-medium text-headline">Your Orders</h2>
         <p className="mt-1 text-[13px] text-muted">
-          Order history and tracking will appear here after the checkout flow ships in the next
-          phase.
+          Track, return, or view order details.
         </p>
+        <Link
+          href="/orders"
+          className="inline-block mt-3 bg-white hover:bg-row-hover border border-border text-headline rounded-sm px-4 py-1.5 text-[13px] font-medium shadow-sm"
+        >
+          View your orders
+        </Link>
       </section>
 
       <div className="mt-4 bg-card rounded-sm shadow-sm p-5">

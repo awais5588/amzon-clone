@@ -73,7 +73,7 @@ export function AccountMenu({ user }: { user: { name: string } | null }) {
               Your Account
             </Link>
             <Link
-              href="/account#orders"
+              href="/orders"
               onClick={() => setOpen(false)}
               className="p-2 hover:bg-row-hover rounded-sm"
             >

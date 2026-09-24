@@ -68,8 +68,12 @@ export async function destroySession(): Promise<void> {
 }
 
 /** Redirects to sign-in when no authenticated user exists; otherwise returns the user. */
-export async function requireUser(): Promise<{ _id: string; name: string; email: string }> {
+export async function requireUser(nextPath = "/account"): Promise<{
+  _id: string;
+  name: string;
+  email: string;
+}> {
   const user = await getSessionUser();
-  if (!user) redirect("/signin?next=/account");
+  if (!user) redirect(`/signin?next=${encodeURIComponent(nextPath)}`);
   return user;
 }
