@@ -60,8 +60,12 @@ export async function readGuestCartId(): Promise<string | undefined> {
   return store.get(CART_COOKIE)?.value;
 }
 
-/** Resolves the effective cart user id, minting a guest cookie if needed (actions only). */
+/** Resolves the effective cart user id: authenticated users get "user:<id>", guests get a token cookie. */
 export async function resolveCartUserId(): Promise<string> {
+  const { getSessionUserId } = await import("@/lib/auth/session");
+  const userId = await getSessionUserId();
+  if (userId) return `user:${userId}`;
+
   const store = await cookies();
   const token = store.get(CART_COOKIE)?.value;
   if (!token) {
@@ -75,6 +79,11 @@ export async function resolveCartUserId(): Promise<string> {
     return `guest:${fresh}`;
   }
   return `guest:${token}`;
+}
+
+export async function clearGuestCartCookie(): Promise<void> {
+  const store = await cookies();
+  store.set(CART_COOKIE, "", { httpOnly: true, sameSite: "lax", path: "/", maxAge: 0 });
 }
 
 export interface RawCartItem {
@@ -95,17 +104,14 @@ export async function findCartRaw(userId: string): Promise<RawCart | null> {
   return (await CartModel.findOne({ userId })) as unknown as RawCart | null;
 }
 
-export async function getCartState(userId?: string): Promise<CartState> {
-  const id = userId ?? (await readGuestCartId());
-  if (!id) return EMPTY;
-  const { connectDB } = await import("@/lib/mongoose");
-  const { CartModel } = await import("@/lib/models");
-  await connectDB();
-  const cart = (await CartModel.findOne({ userId: `guest:${id}` })
-    .lean()
-    .exec()) as unknown as { items: RawCartItem[] } | null;
-  if (!cart) return EMPTY;
-  return summarize(cart.items.map(cartItemView));
+/** Best-effort guest cart state for the current request: authenticated users see their user cart. */
+export async function getCartState(): Promise<CartState> {
+  const { getSessionUserId } = await import("@/lib/auth/session");
+  const userId = await getSessionUserId();
+  if (userId) return getCartStateByUserId(`user:${userId}`);
+  const token = await readGuestCartId();
+  if (!token) return EMPTY;
+  return getCartStateByUserId(`guest:${token}`);
 }
 
 export async function getCartStateByUserId(fullUserId: string): Promise<CartState> {
@@ -117,4 +123,23 @@ export async function getCartStateByUserId(fullUserId: string): Promise<CartStat
     .exec()) as unknown as { items: RawCartItem[] } | null;
   if (!cart) return EMPTY;
   return summarize(cart.items.map(cartItemView));
+}
+
+export interface GuestCartMergeResult {
+  merged: boolean;
+  guestLineCount: number;
+}
+
+/**
+ * Merges the current guest cart (from the cookie, or an explicit token) into an
+ * authenticated user's cart, then removes the guest cart document.
+ */
+export async function mergeGuestCartIntoUser(
+  fullUserId: string,
+  guestToken?: string
+): Promise<GuestCartMergeResult> {
+  const { mergeGuestCartCore } = await import("@/lib/cart-merge");
+  const token = guestToken ?? (await readGuestCartId());
+  if (!token) return { merged: false, guestLineCount: 0 };
+  return mergeGuestCartCore(fullUserId, token);
 }

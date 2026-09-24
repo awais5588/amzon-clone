@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { connectDB } from "@/lib/mongoose";
 import { ProductModel, ReviewModel, type Product } from "@/lib/models";
 import { productToCard } from "@/lib/products";
-import { getCartState, readGuestCartId } from "@/lib/cart";
+import { getCartState } from "@/lib/cart";
 import { ProductView, type ProductViewData, type ProductVariantView } from "@/components/ProductView";
 import { ProductsHeader } from "@/components/ProductsHeader";
 import { Reviews, type ReviewView } from "@/components/Reviews";
@@ -111,8 +111,7 @@ export default async function ProductPage({
         .lean()
         .exec()) as unknown as ProductRow[]);
 
-  const guestCartId = await readGuestCartId();
-  const cartState = guestCartId ? await getCartState(guestCartId) : null;
+  const cartState = await getCartState();
   const initialQtyBySku: Record<string, number> = {};
   if (cartState) {
     for (const item of cartState.items) {

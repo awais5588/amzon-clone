@@ -5,7 +5,7 @@ import { ProductModel } from "@/lib/models";
 import { SerpResultCard } from "@/components/SerpResultCard";
 import { SearchSort } from "@/components/SearchSort";
 import { MiniCart } from "@/components/MiniCart";
-import { getCartState, readGuestCartId } from "@/lib/cart";
+import { getCartState } from "@/lib/cart";
 
 export const dynamic = "force-dynamic";
 
@@ -157,8 +157,7 @@ export default async function SearchPage({
     .lean()
     .exec()) as unknown as Array<Product & { _id: unknown }>;
 
-  const guestCartId = await readGuestCartId();
-  const cartState = guestCartId ? await getCartState(guestCartId) : null;
+  const cartState = await getCartState();
   const qtyBySku = new Map<string, number>();
   if (cartState) {
     for (const i of cartState.items) qtyBySku.set(i.variantSku, i.qty);

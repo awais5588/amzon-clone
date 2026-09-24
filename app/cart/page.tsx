@@ -1,7 +1,7 @@
 import type { Product } from "@/lib/models";
 import { ProductModel } from "@/lib/models";
 import { connectDB } from "@/lib/mongoose";
-import { getCartState, readGuestCartId } from "@/lib/cart";
+import { getCartState } from "@/lib/cart";
 import { fetchProductsByIds, productToCard } from "@/lib/products";
 import { CartView, type SkuInfo } from "@/components/CartView";
 import { Shelf } from "@/components/Shelf";
@@ -21,11 +21,10 @@ async function youMightAlsoLike() {
 }
 
 export default async function CartPage() {
-  const [guestToken] = await Promise.all([readGuestCartId()]);
-  const cart = guestToken ? await getCartState(guestToken) : null;
-  const items = cart?.items ?? [];
-  const totalQty = cart?.totalQty ?? 0;
-  const subtotalCents = cart?.subtotalCents ?? 0;
+  const cart = await getCartState();
+  const items = cart.items;
+  const totalQty = cart.totalQty;
+  const subtotalCents = cart.subtotalCents;
 
   const productIds = [...new Set(items.map((i) => i.productId))];
   const productsById = productIds.length > 0 ? await fetchProductsByIds(productIds) : {};

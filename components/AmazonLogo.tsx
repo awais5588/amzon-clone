@@ -1,7 +1,19 @@
-export function AmazonLogo({ href = "/", className = "" }: { href?: string; className?: string }) {
+export function AmazonLogo({
+  href = "/",
+  className = "",
+  variant = "light",
+}: {
+  href?: string;
+  className?: string;
+  variant?: "light" | "dark";
+}) {
   return (
     <a href={href} className={`flex flex-col leading-none ${className}`} aria-label="amazon clone home">
-      <span className="text-[18px] font-semibold tracking-tight text-white uppercase">
+      <span
+        className={`text-[18px] font-semibold tracking-tight uppercase ${
+          variant === "light" ? "text-white" : "text-headline"
+        }`}
+      >
         amazon<span className="text-[9px] font-normal align-top text-[#febd69]">clone</span>
       </span>
       <svg

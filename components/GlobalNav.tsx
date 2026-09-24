@@ -1,5 +1,6 @@
 import { AmazonLogo } from "./AmazonLogo";
 import { CartBadge } from "./CartBadge";
+import { AccountMenu } from "./AccountMenu";
 
 const NAV_LINKS = [
   "alexa for shopping",
@@ -46,7 +47,7 @@ function CartIcon() {
   );
 }
 
-export function GlobalNav() {
+export function GlobalNav({ user }: { user: { name: string } | null }) {
   return (
     <header id="top" className="shadow-md">
       {/* Top bar */}
@@ -100,12 +101,7 @@ export function GlobalNav() {
           </div>
         </div>
 
-        <div className="flex items-center border border-transparent hover:border-white px-2 leading-tight">
-          <div>
-            <span className="block text-xs text-[#cccccc]">Hello, Awais</span>
-            <span className="block text-sm font-bold">Account & Lists ▾</span>
-          </div>
-        </div>
+        <AccountMenu user={user} />
 
         <a
           href="/orders"

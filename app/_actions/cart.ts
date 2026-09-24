@@ -5,22 +5,14 @@ import { connectDB } from "@/lib/mongoose";
 import {
   cartItemView,
   findCartRaw,
-  readGuestCartId,
+  getCartState as readCartState,
   resolveCartUserId,
   summarize,
   type CartItem,
   type CartState,
-  type RawCartItem,
 } from "@/lib/cart";
 
 type ProductRow = Product & { _id: unknown };
-
-const EMPTY: CartState = {
-  totalQty: 0,
-  subtotalCents: 0,
-  qualifiesForFreeDelivery: false,
-  items: [],
-};
 
 async function readProduct(id: string): Promise<ProductRow | null> {
   await connectDB();
@@ -29,13 +21,7 @@ async function readProduct(id: string): Promise<ProductRow | null> {
 
 export async function getCartState(): Promise<CartState> {
   await connectDB();
-  const token = await readGuestCartId();
-  if (!token) return EMPTY;
-  const cart = (await CartModel.findOne({ userId: `guest:${token}` })
-    .lean()
-    .exec()) as unknown as { items: RawCartItem[] } | null;
-  if (!cart) return EMPTY;
-  return summarize(cart.items.map(cartItemView));
+  return readCartState();
 }
 
 export async function addToCart(input: {
