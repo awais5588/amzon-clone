@@ -22,6 +22,11 @@ export function wordsFromSlug(slug: string): string {
   return slug.replace(/-/g, " ");
 }
 
+export function formatDate(d: Date | string): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
+
 export interface DeliveryPromise {
   members: string;
   nonMembers: string;

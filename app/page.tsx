@@ -1,6 +1,6 @@
 import Image from "next/image";
 import type { ProductCardData } from "@/components/ProductCard";
-import { ProductCard } from "@/components/ProductCard";
+import { Shelf } from "@/components/Shelf";
 import { formatPrice } from "@/lib/format";
 import { fetchProductsBySlugs, productToCard } from "@/lib/products";
 
@@ -42,28 +42,6 @@ function PrimeFocus() {
         Join Prime
       </span>
     </div>
-  );
-}
-
-function Section({ title, note }: { title: string; note?: string }) {
-  return (
-    <div className="mb-3">
-      <h2 className="text-xl font-semibold text-headline">{title}</h2>
-      {note && <p className="text-[13px] text-muted">{note}</p>}
-    </div>
-  );
-}
-
-function Shelf({ title, note, cards }: { title: string; note?: string; cards: ProductCardData[] }) {
-  return (
-    <section className="bg-card rounded-sm shadow-sm px-4 pt-4 pb-5">
-      <Section title={title} note={note} />
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-        {cards.map((c) => (
-          <ProductCard key={c.slug} product={c} />
-        ))}
-      </div>
-    </section>
   );
 }
 
