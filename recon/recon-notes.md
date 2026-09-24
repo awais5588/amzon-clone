@@ -76,6 +76,27 @@ rule-based, no personalization.
   cancelled); idempotent placement (client-generated order key) so double-clicks can't double-order.
 - Two worlds: discovery (tolerates staleness, cheap) vs. transactions (must be correct).
 
+## Decided stack (2026-09-24)
+- Next.js (App Router, React) + TypeScript
+- Tailwind CSS for styling
+- MongoDB + Mongoose for persistence
+- Next.js API routes / server actions for the backend
+- Mock/sandbox payments (no real gateway); PW-hashed auth with session cookies
+
+## Mongo-adaptation notes (how the SQL-influenced model above maps)
+- One doc per: User (embeds address subdocs + payment-method subdocs), Product (variants
+  embedded; price/stock fields), Review, Order (embedded order-items snapshots + address +
+  payment + state machine on `status`), Cart (one per user per region; embedded items
+  {variantRef, qty}).
+- Invariants preserved: cart prices revalidated at checkout; stock soft-reserved on checkout,
+  decremented only on confirmed order; order placement idempotent (client order key, unique
+  index).
+
+## Out of scope (unchanged)
+Marketplace/seller tools, warehouses/fulfillment, real payment gateway, Prime entitlement,
+subscriptions/coupons/lightning-deal countdowns, gift options, live support, 2026 "Alexa for
+Shopping" AI chat layer. Recommendations rule-based.
+
 ## Sources
 - Amazon Customer Service — "Searching and Browsing for Items" (amazon.com/gp/help, nodeId
   GSUNWNFT2ALMPR3L); "How to Place an Order" (nodeId TM0z2tvxdI4nu36ypt).

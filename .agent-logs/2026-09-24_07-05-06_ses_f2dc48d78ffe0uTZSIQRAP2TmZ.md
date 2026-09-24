@@ -5,9 +5,9 @@ author: Awais Javed
 model: opencode/big-pickle
 tool: opencode
 project: amzonClone
-total_exchanges: 7
+total_exchanges: 8
 first_prompt_time: 2026-09-24T07:05:06.461Z
-last_prompt_time: 2026-09-24T07:47:30.700Z
+last_prompt_time: 2026-09-24T07:52:25.865Z
 ---
 
 # Session Log - 2026-09-24
@@ -290,7 +290,31 @@ Do not start coding yet. First inspect the assignment requirements and the curre
 Wait for my approval before writing code. 
 
 [LOG_ENTRY type=RESPONSE num=7 session=ses_f2dc]
-timestamp: 2026-09-24T07:48:17.742Z
+timestamp: 2026-09-24T07:51:28.178Z
 model: opencode/big-pickle
 
-Homepage fetch was bot-blocked (expected — documented). Help docs are fetchable though. Let me grab the official ordering/checkout docs and attempt a search page.
+Two things before I can start:
+
+1. **Which stack?** You picked "different stack" but didn't name it. Choose one and I'll adapt the plan:
+   - Plain React SPA + Express API + SQLite
+   - Vue/Nuxt + Node API + SQLite
+   - Django + SQLite (Python)
+   - Laravel + SQLite (PHP)
+   - Or name your own (tool adds a custom option).
+
+2. **Screenshots:** drop them into `/recon/` (e.g. `recon/home.png`, `recon/pdp.png`, `recon/cart.png`, `recon/checkout.png`, `recon/orders.png`) and tell me when they're in. I'll read them before coding the layout, per the assignment's own example ("read the screenshots in /recon and map out the product before writing any code").
+
+I'll hold off writing code until I have both.
+
+[LOG_ENTRY type=PROMPT num=8 session=ses_f2dc]
+timestamp: 2026-09-24T07:52:25.865Z
+model: opencode/big-pickle
+
+Use this stack:
+
+* Next.js (React) with TypeScript
+* Tailwind CSS
+* MongoDB with Mongoose
+* Next.js API routes / server actions for the backend
+
+For the screenshots, I will provide the required Amazon screenshots in `/recon/`. Do not start coding yet. Wait until I confirm the screenshots are ready, then inspect them and continue with the plan. 
