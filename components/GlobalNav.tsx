@@ -71,7 +71,7 @@ export function GlobalNav({ user }: { user: { name: string } | null }) {
             name="department"
             defaultValue="All"
             aria-label="All departments"
-            className="bg-[#e6e6e6] text-black text-xs px-3 border-r border-[#cdcdcd] outline-none hover:bg-[#dadada] cursor-pointer max-sm:hidden"
+            className="w-16 shrink-0 bg-[#e6e6e6] text-black text-xs px-2 border-r border-[#cdcdcd] outline-none hover:bg-[#dadada] cursor-pointer max-sm:hidden"
           >
             {DEPARTMENTS.map((d) => (
               <option key={d} value={d === "All" ? "all" : d}>
