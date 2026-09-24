@@ -10,11 +10,12 @@ import {
   renewResponse,
   modelStr,
   writeLog,
+  DEFAULT_AUTHOR,
 } from "./capture-common.js";
 
 const DB = process.env.OPENCODE_DB || join(homedir(), ".local/share/opencode/opencode.db");
 const POLL_MS = Number(process.env.AGENT_CAPTURE_POLL_MS || 2000);
-const author = process.env.AGENT_CAPTURE_AUTHOR || process.env.USER || "unknown";
+const author = DEFAULT_AUTHOR;
 
 function query(sql) {
   try {

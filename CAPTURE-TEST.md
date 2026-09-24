@@ -64,6 +64,20 @@ Logs land in **`.agent-logs/`** in the repo root, one file per session:
 Both canaries ran as **separate independent sessions** (`opencode run`), proving the
 mechanism is installed for the repo, not just for the session that created it.
 
+## Canary 3 (the live setup/build session)
+
+A third canary — `CAPTURE TEST — 8x assignment, Awais Javed` — was sent **in the
+session where capture was built** (the one that predates the plugin and is covered by
+the store watcher). It landed in the same format:
+
+- `.agent-logs/2026-09-24_07-05-06_ses_f2dc48d78ffe0uTZSIQRAP2TmZ.md`
+  `[LOG_ENTRY type=PROMPT num=2]` timestamp `2026-09-24T07:37:11.209Z`
+  followed by `[LOG_ENTRY type=RESPONSE num=2]` (final entry converges to the newest
+  completed assistant message once the turn finishes).
+
+This proves the watcher that covers the pre-existing session fires automatically too —
+the prompt and response appear without any manual action.
+
 ## Canary 1 (raw)
 
 Session `ses_f2dac6e60ffelkUf2iW5K4tuYI`, file `2026-09-24_07-31-27_ses_f2dac6e60ffelkUf2iW5K4tuYI.md`:
@@ -166,5 +180,5 @@ Looks like a test ping. No actual task attached. What would you like me to do?
 
 ## Author
 
-Author is currently `vampire` (system username) until the repo owner's GitHub handle
-is provided; it only appears in frontmatter/metadata, not inside entries.
+`Awais Javed` (given via canary 3). Falls back to `AGENT_CAPTURE_AUTHOR` env, then the
+name above, and is stored per-session in the log frontmatter only.

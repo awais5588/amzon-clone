@@ -11,6 +11,7 @@ import {
   textOf,
   modelStr,
   writeLog,
+  DEFAULT_AUTHOR,
 } from "../../scripts/agent-capture/capture-common.js";
 
 const DB_PATH = process.env.OPENCODE_DB || join(homedir(), ".local/share/opencode/opencode.db");
@@ -49,7 +50,7 @@ export const AgentCapture = async ({ directory }) => {
     return chain;
   };
 
-  const author = process.env.AGENT_CAPTURE_AUTHOR || process.env.USER || "unknown";
+  const author = DEFAULT_AUTHOR;
   const project = () => rootDir.split("/").filter(Boolean).pop() || "";
 
   const ensureState = async (sessionID, fallbackModel) => {

@@ -4,6 +4,8 @@ import { tmpdir } from "node:os";
 
 const pad = (n) => String(n).padStart(2, "0");
 
+export const DEFAULT_AUTHOR = process.env.AGENT_CAPTURE_AUTHOR || "Awais Javed";
+
 const fmtDate = (iso) => `${iso.slice(0, 4)}-${iso.slice(5, 7)}-${iso.slice(8, 10)}`;
 
 const stateDir = process.env.AGENT_CAPTURE_STATE_DIR || join(tmpdir(), "opencode-agent-capture");
@@ -36,7 +38,7 @@ export function newState(sessionID, { createdMs, author, project, model }) {
   return {
     sessionID,
     model: model || null,
-    author: author || "",
+    author: author || DEFAULT_AUTHOR,
     project: project || "",
     createdIso,
     turns: [],
