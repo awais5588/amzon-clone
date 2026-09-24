@@ -5,9 +5,9 @@ author: Awais Javed
 model: opencode/big-pickle
 tool: opencode
 project: amzonClone
-total_exchanges: 28
+total_exchanges: 29
 first_prompt_time: 2026-09-24T07:05:06.461Z
-last_prompt_time: 2026-09-24T13:55:47.803Z
+last_prompt_time: 2026-09-24T14:06:18.235Z
 ---
 
 # Session Log - 2026-09-24
@@ -1122,3 +1122,47 @@ Done — homepage polish committed.
 - `components/Shelf.tsx` — optional, backward-compatible `seeMore` prop (`{ href, label? }`) rendering "See more ›" at baseline-right of the title row, plus `items-stretch` so cart cards within each rack keep equal heights. Cart/search/product callers unchanged (prop not passed → no visual change there).
 
 **Verified:** `typecheck` ✓, `lint` ✓, `build` ✓, live SSR shows both "See more ›" links rendering on the homepage. `.agent-logs/` untouched by me. `ProductCard.tsx` unchanged. Ready for the next task.
+
+[LOG_ENTRY type=PROMPT num=29 session=ses_f2dc]
+timestamp: 2026-09-24T14:06:18.235Z
+model: opencode/big-pickle
+
+Fix the default Next.js favicon.
+
+Requirements:
+
+* Remove the default Next.js favicon/icon from the browser tab.
+* Add a simple custom favicon appropriate for this Amazon-style clone.
+* Prefer a clean, minimal shopping/cart-style or Amazon-inspired "a" mark without copying Amazon's exact trademark logo.
+* Make sure the favicon works in the Next.js App Router and appears correctly in the browser tab.
+* Update the appropriate metadata/icon files only; do not change unrelated functionality or UI.
+* Run typecheck, lint, and build after the change.
+* Commit the favicon fix and report the commit hash.
+* Do not modify or delete existing `.agent-logs/` files. 
+
+[LOG_ENTRY type=RESPONSE num=29 session=ses_f2dc]
+timestamp: 2026-09-24T14:16:54.633Z
+model: opencode/big-pickle
+
+Committed cleanly. Final report:
+
+**Commit `8dbdc78`** — `favicon: replace default Next favicon with Amazon-style 'a' mark (SVG + PNG) via App Router metadata icons`
+
+**Changed (icon/metadata only — nothing else):**
+- `app/favicon.ico` — **deleted** (Next's default globe-mark that was showing in the tab).
+- `app/icon.svg` — custom favicon: navy `#131921` tile + white "a" letterform with a stylized "smile" over the counter (Amazon-inspired abstract mark, not the trademarked wordmark).
+- `app/icon.png` — 64×64 rasterized fallback (macOS built-in, alpha preserved) for browsers that don't render SVG favicons.
+
+**Wired via App-Router convention** (metadata files only — `app/icon.svg`/`app/icon.png` are auto-registered by the file-based metadata system; **no** `layout.tsx` edit, no route changes).
+
+**Verified (all green):**
+- `typecheck` ✓ `lint` ✓ `build` ✓
+- Live SSR `<head>` emits both `<link rel="icon">` tags — SVG (`sizes="any"`) + PNG (`sizes="64x64"`) — and `GET /favicon.ico` now correctly **404s** (default removed, no stale).
+- `/icon.svg` → 200 `image/svg+xml`; `/icon.png` → 200 `image/png`.
+- Commit contains exactly the 3 icon ops (`D favicon.ico`, `A icon.png`, `A icon.svg`); working tree clean aside from the harness `M .agent-logs/...` log path (untouched, not staged). Favicon now shows the Amazon-style "a" in the browser tab. Task complete.Done — favicon swapped and committed as `8dbdc78`.
+
+**Changed** (icon/metadata files only, nothing else):
+- `app/favicon.ico` — removed (default Next globe).
+- `app/icon.svg` + `app/icon.png` — custom Amazon-style "a" mark (navy `#131921` tile, white "a" with orange smile accent). App-Router route metadata icons (no `layout.tsx`/route edits).
+
+**Verified:** `typecheck`/`lint`/`build` green; SSR `<head>` emits both `rel="icon"` links (SVG + PNG), `/favicon.ico` now 404s, `/icon.svg` 200 SVGO+X, `/icon.png` 200 PNG. Working tree clean except the harness `M .agent-logs/...` log (untouched).
