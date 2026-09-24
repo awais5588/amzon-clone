@@ -170,7 +170,20 @@ impressive. Dead ends, wrong turns, and the moment you realised the first approa
 wrong are the most useful things in it. Leave them in. 
 
 [LOG_ENTRY type=RESPONSE num=1 session=ses_f2dc]
-timestamp: 2026-09-24T07:32:22.578Z
+timestamp: 2026-09-24T07:34:04.505Z
 model: opencode/big-pickle
 
-Both canaries captured prompt + response in the required format across two independent sessions. Let me verify the quoted-prompt oddity is opencode's own storage (verbatim fidelity), and check the current session's log is converging.
+**Step 1 — Setup identification**
+
+- **Tool:** opencode CLI v1.18.32
+- **Model:** `opencode/big-pickle` — a single model plans and executes (plan/build modes); subagents inherit it
+- **Hook mechanism:** Yes — opencode has a **plugin event-bus** (`.opencode/plugins/`, auto-loaded, `chat.message` + `event` hooks). It has no `hook` key in `opencode.json`; I confirmed this against the published config schema before proceeding. Checked, not guessed.
+
+**Step 2-4 — Installed and verified**
+
+- `.opencode/plugins/agent-capture.js` (plugin): `chat.message` → PROMPT, `session.idle` → RESPONSE, reading the store via `bun:sqlite` (the SDK client projection returned empty arrays in `run` mode)
+- `scripts/agent-capture/capture-common.js` + `daemon.js`: shared format/renderer + a 2s store-watcher scoped to **this already-running session** (opencode loads plugins only at startup, so this session predates the plugin — watcher is automatic, running under `nohup`, no manual steps)
+- **Canary session 1** and **canary session 2** (two independent `opencode run` sessions) both landed prompt + response → `CAPTURE-TEST.md` written with both raw entries and every dead-end (SDK wrapper bug, `messageID: undefined`, premature response finalization)
+- Committed interleaved: infra commit → canary logs + `CAPTURE-TEST.md` commit. Not gitignored.
+
+**Step 5 — Blocked:** this file contains only the capture instructions — no build task/spec was provided, and the repo is empty. Send the actual assignment brief (or point me at it) and I'll start. Also: what's your GitHub handle for the `author:` field (currently `vampire`)?
