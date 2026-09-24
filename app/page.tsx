@@ -55,7 +55,7 @@ async function AmazonDevices() {
   const slugs = ["fire-tv-stick-4k-max", "fire-tv-stick-4k-plus", "echo-dot-5th-gen", "kindle-paperwhite-16gb"];
   const cards = slugs.filter((s) => bySlug[s]).map((s) => productToCard(bySlug[s]));
   if (cards.length === 0) return null;
-  return <Shelf title="Top-selling Amazon Devices" cards={cards} />;
+  return <Shelf title="Top-selling Amazon Devices" cards={cards} seeMore={{ href: "/search?q=device", label: "See more" }} />;
 }
 
 async function DiscoverShelf() {
@@ -70,7 +70,7 @@ async function DiscoverShelf() {
   for (const s of ["sour-patch-kids", "lego-botanical-roses", "nike-running-shirt", "stanley-quencher-tumbler", "kindle-paperwhite-16gb"]) {
     if (bySlug[s]) candies.push(productToCard(bySlug[s]));
   }
-  return <Shelf title="You might like" note="Sponsored · picks we think you'll love" cards={candies} />;
+  return <Shelf title="You might like" note="Sponsored · picks we think you'll love" cards={candies} seeMore={{ href: "/search", label: "See more" }} />;
 }
 
 export default async function Home() {
