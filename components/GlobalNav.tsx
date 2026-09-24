@@ -84,7 +84,7 @@ export function GlobalNav({ user }: { user: { name: string } | null }) {
             name="q"
             placeholder="Search Amazon"
             aria-label="Search Amazon"
-            className="flex-1 min-w-0 px-3 text-sm text-black outline-none placeholder:text-[#777]"
+            className="flex-1 min-w-0 px-3 text-sm text-black bg-white placeholder:text-[#8f8f8f] outline-none focus:outline-2 focus:outline-solid focus:outline-[#f90] focus:outline-offset-[-2px]"
           />
           <button
             type="submit"
