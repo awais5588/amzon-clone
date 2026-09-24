@@ -26,3 +26,15 @@ export async function fetchProductsBySlugs(slugs: string[]): Promise<Record<stri
   for (const d of docs) bySlug[d.slug] = d;
   return bySlug;
 }
+
+export async function fetchProductsByIds(ids: string[]): Promise<Record<string, Product>> {
+  const { ProductModel } = await import("@/lib/models");
+  const { connectDB } = await import("@/lib/mongoose");
+  await connectDB();
+  const docs = (await ProductModel.find({ _id: { $in: ids.map((id) => id) } })
+    .lean()
+    .exec()) as unknown as Array<Product & { _id: unknown }>;
+  const byId: Record<string, Product> = {};
+  for (const d of docs) byId[String(d._id)] = d;
+  return byId;
+}

@@ -34,17 +34,26 @@ export interface DeliveryPromise {
 
 /** Simulated US-context delivery promises, keyed to "today" (mirrors the screenshot copy). */
 export function deliveryPromises(now: Date = new Date()): DeliveryPromise {
-  const addDays = (base: Date, days: number) => {
-    const d = new Date(base);
-    d.setDate(d.getDate() + days);
-    return d;
-  };
-  const monthDay = (d: Date) =>
-    d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  const weekdayMonthDay = (d: Date) =>
-    d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
   return {
-    members: `Join Prime to get FREE delivery Tomorrow, ${monthDay(addDays(now, 1))}`,
-    nonMembers: `Or Non-members get FREE delivery ${weekdayMonthDay(addDays(now, 4))}`,
+    members: `Join Prime to get FREE delivery Tomorrow, ${monthDayOf(addDays(now, 1))}`,
+    nonMembers: `Or Non-members get FREE delivery ${freeDeliveryDate(now)}`,
   };
+}
+
+export function freeDeliveryDate(now: Date = new Date()): string {
+  return weekdayMonthDayOf(addDays(now, 4));
+}
+
+function addDays(base: Date, days: number): Date {
+  const d = new Date(base);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function monthDayOf(d: Date): string {
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function weekdayMonthDayOf(d: Date): string {
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
