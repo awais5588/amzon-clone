@@ -78,7 +78,7 @@ export function GlobalNav({ user }: { user: { name: string } | null }) {
             </Link>
           </nav>
 
-          <form action="/search" className="ml-auto hidden min-w-0 flex-1 items-center rounded-xl border border-border-strong bg-surface p-1 transition-colors focus-within:border-accent focus-within:ring-4 focus-within:ring-accent/10 md:flex lg:max-w-[38rem]">
+          <form action="/search" className="morrow-search-form ml-auto hidden min-w-0 flex-1 items-center rounded-xl border border-border-strong bg-surface p-1 transition-colors md:flex lg:max-w-[38rem]">
             <label htmlFor="global-search" className="sr-only">
               Search {BRAND.name}
             </label>
@@ -87,7 +87,7 @@ export function GlobalNav({ user }: { user: { name: string } | null }) {
               type="search"
               name="q"
               placeholder={`Search ${BRAND.name}`}
-              className="min-w-0 flex-1 bg-transparent px-3 text-sm text-headline outline-none placeholder:text-text-muted"
+              className="morrow-search-field min-w-0 flex-1 bg-transparent px-3 text-sm text-headline outline-none placeholder:text-text-muted"
             />
             <button type="submit" className="flex h-9 w-10 items-center justify-center rounded-lg bg-accent text-accent-ink transition-colors hover:bg-accent-hover" aria-label="Search">
               <SearchIcon />
@@ -109,7 +109,7 @@ export function GlobalNav({ user }: { user: { name: string } | null }) {
           </div>
         </div>
 
-        <form action="/search" className="mb-3 flex items-center rounded-xl border border-border-strong bg-surface p-1 md:hidden">
+        <form action="/search" className="morrow-search-form mb-3 flex items-center rounded-xl border border-border-strong bg-surface p-1 md:hidden">
           <label htmlFor="mobile-search" className="sr-only">
             Search {BRAND.name}
           </label>
@@ -118,7 +118,7 @@ export function GlobalNav({ user }: { user: { name: string } | null }) {
             type="search"
             name="q"
             placeholder={`Search ${BRAND.name}`}
-            className="min-w-0 flex-1 bg-transparent px-3 text-sm text-headline outline-none placeholder:text-text-muted"
+            className="morrow-search-field min-w-0 flex-1 bg-transparent px-3 text-sm text-headline outline-none placeholder:text-text-muted"
           />
           <button type="submit" className="flex h-9 w-10 items-center justify-center rounded-lg bg-accent text-accent-ink" aria-label="Search">
             <SearchIcon />

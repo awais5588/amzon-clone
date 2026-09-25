@@ -124,6 +124,22 @@ select option {
   color: var(--text-primary);
 }
 
+.morrow-search-form:focus-within {
+  border-color: var(--border-strong);
+  box-shadow: none;
+}
+
+.morrow-search-field:focus,
+.morrow-search-field:focus-visible {
+  outline: none;
+}
+
+.morrow-search-field:focus-visible {
+  box-shadow: inset 0 -2px 0 var(--accent);
+  caret-color: var(--accent);
+  transition: box-shadow 160ms ease;
+}
+
 @layer components {
   .morrow-container {
     width: 100%;
