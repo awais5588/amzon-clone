@@ -1,56 +1,67 @@
-const FOOTER_COLUMNS: { title: string; links: string[] }[] = [
+import Link from "next/link";
+import { BRAND } from "@/lib/brand";
+
+const FOOTER_GROUPS = [
   {
-    title: "Get to Know Us",
-    links: ["Careers", "Blog", "About Amazon", "Investor Relations", "Amazon Science"],
+    title: "Explore",
+    links: [
+      { label: "All products", href: "/search" },
+      { label: "New arrivals", href: "/search?sort=newest" },
+      { label: "Best sellers", href: "/search?sort=bestsellers" },
+      { label: "Top rated", href: "/search?sort=rating" },
+    ],
   },
   {
-    title: "Make Money with Us",
-    links: ["Sell products on Amazon", "Sell on Amazon Business", "Become an Affiliate", "Advertise Your Products"],
+    title: "Categories",
+    links: [
+      { label: "Electronics", href: "/search?department=Electronics" },
+      { label: "Home & Kitchen", href: "/search?department=Home%20%26%20Kitchen" },
+      { label: "Books", href: "/search?department=Books" },
+      { label: "Fashion", href: "/search?department=Fashion" },
+    ],
   },
   {
-    title: "Payment Products",
-    links: ["Your Business Account", "Shop with Points", "Reload Your Balance"],
-  },
-  {
-    title: "Let Us Help You",
-    links: ["Amazon and COVID-19", "Your Account", "Your Orders", "Shipping Rates & Policies", "Help"],
+    title: "Your Morrow",
+    links: [
+      { label: "Sign in", href: "/signin" },
+      { label: "Create account", href: "/signup" },
+      { label: "Your orders", href: "/orders" },
+      { label: "Your bag", href: "/cart" },
+    ],
   },
 ];
 
 export function Footer() {
   return (
-    <footer className="mt-auto">
-      <a
-        href="#top"
-        className="block w-full text-center text-[13px] py-3 text-white bg-navbar-2 hover:bg-[#3a4453]"
-      >
-        Back to top
-      </a>
-
-      <div className="bg-[#232f3e] text-[#dddddd] text-[13px]">
-        <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-2 sm:grid-cols-4 gap-8">
-          {FOOTER_COLUMNS.map((col) => (
-            <div key={col.title}>
-              <h3 className="text-white font-bold mb-2">{col.title}</h3>
-              <ul className="space-y-1.5">
-                {col.links.map((link) => (
-                  <li key={link}>
-                    <span className="cursor-pointer hover:underline">{link}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-
-        <div className="border-t border-[#3a4553]">
-          <div className="max-w-6xl mx-auto px-6 py-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
-            <span>Amazon.com clone</span>
-            <span>•</span>
-            <span>US context demo (non-commercial)</span>
-            <span>•</span>
-            <span>For an 8x assignment</span>
+    <footer className="mt-auto border-t border-border bg-surface">
+      <div className="morrow-container py-12 lg:py-16">
+        <div className="grid gap-10 lg:grid-cols-[1.2fr_2fr]">
+          <div>
+            <p className="font-display text-3xl leading-tight text-headline">Make room for good things.</p>
+            <p className="mt-3 max-w-sm text-sm leading-relaxed text-text-secondary">
+              {BRAND.descriptor}. A quieter place to discover what comes next.
+            </p>
           </div>
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+            {FOOTER_GROUPS.map((group) => (
+              <div key={group.title}>
+                <h2 className="morrow-eyebrow">{group.title}</h2>
+                <ul className="mt-4 space-y-3">
+                  {group.links.map((link) => (
+                    <li key={link.label}>
+                      <Link href={link.href} className="text-sm text-text-secondary transition-colors hover:text-accent">
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="mt-12 flex flex-col gap-2 border-t border-border pt-5 text-xs text-text-muted sm:flex-row sm:items-center sm:justify-between">
+          <span>© {new Date().getFullYear()} {BRAND.name}</span>
+          <span>Database-backed storefront · Built for considered shopping</span>
         </div>
       </div>
     </footer>

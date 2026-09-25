@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Stars } from "./Stars";
 import { formatPrice, formatThousands, formatRating, deliveryPromises } from "@/lib/format";
 import { addToCart, getCartState, setCartItemQty } from "@/app/_actions/cart";
@@ -44,53 +45,37 @@ export function SerpResultCard({
 }: SerpResultCardProps) {
   const [qty, setQty] = useState(initialQty);
   const [pending, setPending] = useState(false);
-  const [promise] = useState<{ members: string; nonMembers: string }>(
-    () => deliveryDate ?? deliveryPromises()
-  );
+  const [promise] = useState<{ members: string; nonMembers: string }>(() => deliveryDate ?? deliveryPromises());
   const outOfStock = stock <= 0;
+  const hasDiscount = Boolean(listPriceCents && listPriceCents > priceCents);
 
-  const apply = useCallback((nextQty: number) => {
-    setQty(nextQty);
+  const run = useCallback(async (fn: () => Promise<{ totalQty: number; subtotalCents: number; qualifiesForFreeDelivery: boolean }>) => {
+    setPending(true);
+    try {
+      const res = await fn();
+      setCartSummary(res);
+    } finally {
+      setPending(false);
+    }
   }, []);
 
-  const run = useCallback(
-    async (fn: () => Promise<{ totalQty: number; subtotalCents: number; qualifiesForFreeDelivery: boolean }>) => {
-      setPending(true);
-      try {
-        const res = await fn();
-        setCartSummary(res);
-      } finally {
-        setPending(false);
-      }
-    },
-    []
-  );
-
   const handleAdd = useCallback(
-    () =>
-      run(() =>
-        addToCart({ productId, variantSku }).then((s) => {
-          const item = s.items.find((i) => i.variantSku === variantSku);
-          apply(item?.qty ?? 1);
-          return s;
-        })
-      ),
-    [run, apply, productId, variantSku]
+    () => run(() => addToCart({ productId, variantSku }).then((s) => {
+      const item = s.items.find((i) => i.variantSku === variantSku);
+      setQty(item?.qty ?? 1);
+      return s;
+    })),
+    [run, productId, variantSku]
   );
 
   const handleStep = useCallback(
-    (delta: number) =>
-      run(() =>
-        setCartItemQty({ productId, variantSku, qty: qty + delta }).then((s) => {
-          const item = s.items.find((i) => i.variantSku === variantSku);
-          apply(item?.qty ?? 0);
-          return s;
-        })
-      ),
-    [run, apply, productId, variantSku, qty]
+    (delta: number) => run(() => setCartItemQty({ productId, variantSku, qty: qty + delta }).then((s) => {
+      const item = s.items.find((i) => i.variantSku === variantSku);
+      setQty(item?.qty ?? 0);
+      return s;
+    })),
+    [run, productId, variantSku, qty]
   );
-
-  const canIncrease = !outOfStock && qty < stock;
 
   useEffect(() => {
     let active = true;
@@ -102,121 +87,82 @@ export function SerpResultCard({
     return () => {
       active = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialQty, variantSku]);
+
+  const canIncrease = !outOfStock && qty < stock;
 
   return (
-    <article className="flex gap-3 bg-card rounded-sm shadow-sm hover:shadow-md transition-shadow p-2.5">
-      <a href={`/product/${slug}`} className="shrink-0 w-36 sm:w-48 aspect-square bg-[#f7fafa] overflow-hidden rounded-sm">
+    <article className="group flex gap-4 rounded-2xl border border-border bg-surface p-3 shadow-[0_12px_30px_rgba(0,0,0,0.14)] transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-accent/70 hover:shadow-[0_18px_38px_rgba(0,0,0,0.24)] sm:gap-5 sm:p-4">
+      <Link href={`/product/${slug}`} className="relative aspect-square w-28 shrink-0 overflow-hidden rounded-xl border border-border bg-surface-raised sm:w-48">
         <Image
           src={image || "/images/placeholder.png"}
           alt={title}
-          width={200}
-          height={200}
-          className="w-full h-full object-cover"
-          sizes="200px"
+          width={300}
+          height={300}
+          className="h-full w-full object-contain p-3 transition-transform duration-200 group-hover:scale-[1.025]"
+          sizes="(min-width:640px) 192px, 112px"
         />
-      </a>
+      </Link>
 
-      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+      <div className="flex min-w-0 flex-1 flex-col">
         {isAmazonBrand && (
-          <p className="text-xs text-muted flex items-center gap-1 border border-border rounded-sm px-1.5 py-0.5 w-fit mt-0.5">
-            Featured from Amazon brands
-            <span className="text-faint">ⓘ</span>
-          </p>
+          <p className="morrow-eyebrow mt-0.5 w-fit rounded-md border border-accent/25 bg-accent-soft px-2 py-1 text-[9px]">Morrow select</p>
         )}
 
-        <h3 className="text-[15px] leading-snug text-link hover:text-link-hover hover:underline line-clamp-2">
-          <a href={`/product/${slug}`}>{title}</a>
-        </h3>
+        <h2 className="mt-1.5 line-clamp-2 text-base font-bold leading-snug text-headline transition-colors group-hover:text-accent sm:text-lg">
+          <Link href={`/product/${slug}`} className="outline-none focus-visible:text-accent">{title}</Link>
+        </h2>
 
-        <div className="flex items-center gap-1.5 text-[13px]">
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-text-secondary">
           <span className="font-bold text-star">{formatRating(ratingAvg)}</span>
           <Stars rating={ratingAvg} />
-          <span className="text-faint">{formatThousands(ratingCount)}</span>
+          <span>{formatThousands(ratingCount)} ratings</span>
         </div>
 
-        {boughtInPastMonth > 0 && (
-          <p className="text-xs text-muted">
-            {formatThousands(boughtInPastMonth)}+ bought in past month
-          </p>
-        )}
+        {boughtInPastMonth > 0 && <p className="mt-1.5 text-xs text-text-muted">{formatThousands(boughtInPastMonth)}+ bought in past month</p>}
 
-        <div className="flex items-baseline gap-1.5 mt-1">
-          <span className="text-xl font-semibold text-headline">{formatPrice(priceCents)}</span>
-          {listPriceCents && listPriceCents > priceCents && (
-            <del className="text-sm text-faint">{formatPrice(listPriceCents)}</del>
-          )}
+        <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <span className="text-2xl font-extrabold tracking-[-0.04em] text-headline">{formatPrice(priceCents)}</span>
+          {hasDiscount && <del className="text-sm text-text-muted">{formatPrice(listPriceCents!)}</del>}
         </div>
 
-        <p className={outOfStock ? "text-[13px] text-[#b12704] font-medium mt-1" : "text-[13px] text-[#007600] font-medium mt-1"}>
-          {outOfStock
-            ? "Currently unavailable."
-            : "In Stock"}
+        <p className={`mt-1.5 text-xs font-semibold ${outOfStock ? "text-danger" : "text-success"}`}>
+          {outOfStock ? "Currently unavailable" : "In stock · Ready to ship"}
         </p>
 
-        <div className="text-[13px] leading-tight mt-1">
-          <p className="text-link underline-offset-2 hover:underline">{promise.members}</p>
-          <p className="text-muted">{promise.nonMembers}</p>
+        <div className="mt-1.5 text-xs leading-relaxed">
+          <p className="font-semibold text-text-secondary">{promise.members}</p>
+          <p className="text-text-muted">{promise.nonMembers}</p>
         </div>
 
-        <p className="text-xs text-faint flex items-center gap-1 mt-0.5">
-          Carbon impact <ChevronDown /> {carbonImpact}
+        <p className="mt-1.5 flex items-center gap-1 text-[11px] text-text-muted">
+          Carbon impact <span className="text-text-secondary">{carbonImpact}</span>
         </p>
 
-        <div className="mt-1.5">
+        <div className="mt-3">
           {outOfStock ? (
-            <p className="text-[13px] text-muted">
-              <span className="text-link underline-offset-2 hover:underline">See options</span> ·{" "}
-              <span className="text-link underline-offset-2 hover:underline">Other sellers</span>
-            </p>
+            <Link href={`/product/${slug}`} className="morrow-link text-sm">View options <span aria-hidden="true">↗</span></Link>
           ) : qty === 0 ? (
             <button
               type="button"
               onClick={() => void handleAdd()}
               disabled={pending}
-              className="bg-cta hover:bg-[#e6c200] border border-cta-border text-headline rounded-[8px] px-4 py-1.5 text-[13px] font-medium shadow-sm disabled:opacity-50 transition-colors"
+              className="morrow-button px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Add to cart
+              {pending ? "Adding…" : "Add to bag"}
             </button>
           ) : (
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-headline">
-                {qty} in cart
-              </span>
-              <div className="flex items-center rounded-sm border border-border overflow-hidden">
-                <button
-                  type="button"
-                  aria-label="Decrease quantity"
-                  disabled={pending}
-                  onClick={() => void handleStep(-1)}
-                  className="px-2.5 py-1 text-lg leading-none hover:bg-row-hover disabled:opacity-50"
-                >
-                  −
-                </button>
-                <span className="px-2 text-sm tabular-nums">{qty}</span>
-                <button
-                  type="button"
-                  aria-label="Increase quantity"
-                  disabled={pending || !canIncrease}
-                  onClick={() => void handleStep(1)}
-                  className="px-2.5 py-1 text-lg leading-none hover:bg-row-hover disabled:opacity-50"
-                >
-                  +
-                </button>
+            <div className="flex flex-wrap items-center gap-2" aria-live="polite">
+              <span className="text-xs font-semibold text-success">{qty} in bag</span>
+              <div className="flex items-center overflow-hidden rounded-lg border border-border bg-surface-raised">
+                <button type="button" aria-label="Decrease quantity" disabled={pending} onClick={() => void handleStep(-1)} className="px-3 py-1.5 text-lg leading-none text-text-secondary transition-colors hover:bg-surface-hover hover:text-headline disabled:opacity-40">−</button>
+                <span className="min-w-7 px-1 text-center text-sm font-bold tabular-nums text-headline">{qty}</span>
+                <button type="button" aria-label="Increase quantity" disabled={pending || !canIncrease} onClick={() => void handleStep(1)} className="px-3 py-1.5 text-lg leading-none text-text-secondary transition-colors hover:bg-surface-hover hover:text-headline disabled:opacity-40">+</button>
               </div>
             </div>
           )}
         </div>
       </div>
     </article>
-  );
-}
-
-function ChevronDown() {
-  return (
-    <svg viewBox="0 0 24 24" className="w-3 h-3" fill="currentColor" aria-hidden="true">
-      <path d="M7 9l5 5 5-5z" />
-    </svg>
   );
 }

@@ -1,154 +1,129 @@
 import Link from "next/link";
+import { BRAND } from "@/lib/brand";
 import { AmazonLogo } from "./AmazonLogo";
 import { CartBadge } from "./CartBadge";
 import { AccountMenu } from "./AccountMenu";
 
-const NAV_LINKS = [
-  "alexa for shopping",
-  "Join Prime",
-  "Early Prime Deals",
-  "Prime Video",
-  "Buy Again",
-  "Groceries",
-  "Coupons",
-  "Pharmacy",
-  "Amazon Home - Automotive",
-];
-
-const DEPARTMENTS = [
-  "All",
-  "Electronics",
-  "Home & Kitchen",
-  "Books",
-  "Fashion",
-  "Toys & Games",
-];
-
-function LocationPin() {
-  return (
-    <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="currentColor" aria-hidden="true">
-      <path d="M12 2C7.6 2 4 5.6 4 10c0 5.4 7.1 11.5 7.6 12 .3.3.5 0 .8-.3.4-1.1 6-7.1 6-11.7C18.4 5.6 15.2 2 12 2zm0 10.5A2.5 2.5 0 1 1 14.5 10h.5a3 3 0 1 0-2 2.8v-.6a1.5 1.5 0 0 0 0-.5z" />
-    </svg>
-  );
-}
+const CATEGORIES = ["Electronics", "Home & Kitchen", "Books", "Fashion", "Toys & Games"];
 
 function SearchIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor" aria-hidden="true">
-      <path d="M10 2a8 8 0 1 0 4.9 14.3l4.9 4.9a1 1 0 0 0 1.4-1.4l-4.9-4.9A8 8 0 0 0 10 2zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12z" />
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m16 16 4.2 4.2" strokeLinecap="round" />
     </svg>
   );
 }
 
-function CartIcon() {
+function BagIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="w-8 h-8 text-white" fill="currentColor" aria-hidden="true">
-      <path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM7.2 14.6l.1-.1L8.4 13h7.4c.8 0 1.5-.4 1.9-1.1l3.2-5.9L18.4 4l-2.6 5H8.5L8.6 8.9 6.4 4.4H2.8C2 4.4 1.4 5 1.4 5.8S2 7.1 2.8 7.1h1.8l2.7 5.5-1 1.8c-.3.5 0 1 .6 1l14.8.1-1.4-1.9-9-.5-.9 1.6z" />
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+      <path d="M5.5 8.5h13l1 11h-15l1-11Z" strokeLinejoin="round" />
+      <path d="M9 9V6.8a3 3 0 0 1 6 0V9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
     </svg>
   );
 }
 
 export function GlobalNav({ user }: { user: { name: string } | null }) {
   return (
-    <header id="top" className="shadow-md">
-      {/* Top bar */}
-      <div className="bg-navbar text-white flex items-stretch gap-3 h-14 px-4">
-        <div className="flex items-center border border-transparent hover:border-white px-2">
-          <AmazonLogo />
-        </div>
+    <header id="top" className="sticky top-0 z-50 border-b border-border/80 bg-surface/95 backdrop-blur-xl">
+      <div className="morrow-container">
+        <div className="flex h-[4.5rem] items-center gap-3">
+          <details className="group relative lg:hidden">
+            <summary className="flex h-10 w-10 list-none items-center justify-center rounded-lg border border-border text-text-secondary transition-colors hover:border-accent hover:text-accent [&::-webkit-details-marker]:hidden" aria-label="Open navigation">
+              <MenuIcon />
+            </summary>
+            <div className="absolute left-0 top-12 z-50 w-72 rounded-2xl border border-border bg-surface-raised p-3 shadow-[0_24px_60px_rgba(0,0,0,0.4)]">
+              <p className="morrow-eyebrow mb-3 px-2">Explore Morrow</p>
+              <nav className="grid gap-1" aria-label="Mobile navigation">
+                <Link href="/search" className="rounded-lg px-3 py-2.5 text-sm font-semibold text-headline transition-colors hover:bg-surface-hover hover:text-accent">
+                  Browse all products
+                </Link>
+                {CATEGORIES.map((category) => (
+                  <Link
+                    key={category}
+                    href={`/search?department=${encodeURIComponent(category)}`}
+                    className="rounded-lg px-3 py-2.5 text-sm text-text-secondary transition-colors hover:bg-surface-hover hover:text-headline"
+                  >
+                    {category}
+                  </Link>
+                ))}
+                <div className="my-2 border-t border-border" />
+                <Link href="/orders" className="rounded-lg px-3 py-2.5 text-sm text-text-secondary transition-colors hover:bg-surface-hover hover:text-headline">
+                  Orders
+                </Link>
+                <div className="lg:hidden">
+                  <AccountMenu user={user} />
+                </div>
+              </nav>
+            </div>
+          </details>
 
-        <div className="flex items-center border border-transparent hover:border-white px-2 max-lg:hidden">
-          <LocationPin />
-          <div className="ml-1 leading-tight">
-            <div className="text-xs text-[#cccccc]">Delivering to Nashville 37217</div>
-            <div className="text-sm font-bold">• Update location</div>
+          <AmazonLogo className="shrink-0" />
+
+          <nav className="hidden items-center gap-5 lg:flex" aria-label="Primary navigation">
+            <Link href="/search" className="text-sm font-semibold text-text-secondary transition-colors hover:text-accent">
+              Explore
+            </Link>
+            <Link href="/search?sort=newest" className="text-sm font-semibold text-text-secondary transition-colors hover:text-accent">
+              New arrivals
+            </Link>
+          </nav>
+
+          <form action="/search" className="ml-auto hidden min-w-0 flex-1 items-center rounded-xl border border-border-strong bg-surface p-1 transition-colors focus-within:border-accent focus-within:ring-4 focus-within:ring-accent/10 md:flex lg:max-w-[38rem]">
+            <label htmlFor="global-search" className="sr-only">
+              Search {BRAND.name}
+            </label>
+            <input
+              id="global-search"
+              type="search"
+              name="q"
+              placeholder={`Search ${BRAND.name}`}
+              className="min-w-0 flex-1 bg-transparent px-3 text-sm text-headline outline-none placeholder:text-text-muted"
+            />
+            <button type="submit" className="flex h-9 w-10 items-center justify-center rounded-lg bg-accent text-accent-ink transition-colors hover:bg-accent-hover" aria-label="Search">
+              <SearchIcon />
+            </button>
+          </form>
+
+          <div className="ml-auto flex items-center gap-1.5 md:ml-0">
+            <div className="hidden lg:block">
+              <AccountMenu user={user} />
+            </div>
+            <Link href="/orders" className="hidden h-10 items-center rounded-lg px-2.5 text-sm font-semibold text-text-secondary transition-colors hover:bg-surface-hover hover:text-headline lg:flex">
+              Orders
+            </Link>
+            <Link href="/cart" className="relative flex h-10 items-center gap-2 rounded-lg border border-transparent px-2.5 text-sm font-bold text-headline transition-colors hover:border-border hover:bg-surface-hover">
+              <BagIcon />
+              <span className="hidden sm:inline">Bag</span>
+              <CartBadge />
+            </Link>
           </div>
         </div>
 
-        {/* Search */}
-        <form action="/search" className="flex flex-1 min-w-0 my-auto h-10 rounded-md overflow-hidden">
-          <select
-            name="department"
-            defaultValue="All"
-            aria-label="All departments"
-            className="w-16 shrink-0 bg-[#e6e6e6] text-black text-xs px-2 border-r border-[#cdcdcd] outline-none hover:bg-[#dadada] cursor-pointer max-sm:hidden"
-          >
-            {DEPARTMENTS.map((d) => (
-              <option key={d} value={d === "All" ? "all" : d}>
-                {d}
-              </option>
-            ))}
-          </select>
+        <form action="/search" className="mb-3 flex items-center rounded-xl border border-border-strong bg-surface p-1 md:hidden">
+          <label htmlFor="mobile-search" className="sr-only">
+            Search {BRAND.name}
+          </label>
           <input
+            id="mobile-search"
             type="search"
             name="q"
-            placeholder="Search Amazon"
-            aria-label="Search Amazon"
-            className="flex-1 min-w-0 px-3 text-sm text-black bg-white placeholder:text-[#8f8f8f] outline-none focus:outline-2 focus:outline-solid focus:outline-[#f90] focus:outline-offset-[-2px]"
+            placeholder={`Search ${BRAND.name}`}
+            className="min-w-0 flex-1 bg-transparent px-3 text-sm text-headline outline-none placeholder:text-text-muted"
           />
-          <button
-            type="submit"
-            aria-label="Search"
-            className="bg-buy hover:bg-buy-hover text-black px-3 flex items-center justify-center cursor-pointer"
-          >
+          <button type="submit" className="flex h-9 w-10 items-center justify-center rounded-lg bg-accent text-accent-ink" aria-label="Search">
             <SearchIcon />
           </button>
         </form>
-
-        <div className="flex items-center gap-1 max-lg:hidden">
-          <div className="border border-transparent hover:border-white px-2 py-1 leading-tight">
-            <span className="block text-xs text-[#cccccc]">En</span>
-            <span className="block text-sm font-bold">EN ▾</span>
-          </div>
-        </div>
-
-        <AccountMenu user={user} />
-
-        <Link
-          href="/orders"
-          className="flex items-center border border-transparent hover:border-white px-2 leading-tight max-lg:hidden"
-        >
-          <span>
-            <span className="block text-xs text-[#cccccc]">Returns</span>
-            <span className="block text-sm font-bold">& Orders</span>
-          </span>
-        </Link>
-
-        <a href="/cart" className="flex items-end border border-transparent hover:border-white px-2">
-          <span className="relative">
-            <CartIcon />
-            <CartBadge />
-          </span>
-          <span className="text-sm font-bold ml-0.5 mb-0.5">Cart</span>
-        </a>
-      </div>
-
-      {/* Services strip */}
-      <div className="bg-navbar-2 text-white text-[13px] flex items-center gap-3 h-9 px-4 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <span className="flex items-center gap-1.5 font-bold cursor-pointer hover:text-[#febd69]">
-          <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor" aria-hidden="true">
-            <path d="M3 6h18v2H3zM3 11h18v2H3zM3 16h18v2H3z" />
-          </svg>
-          All
-        </span>
-
-        {NAV_LINKS.map((label) => (
-          <span
-            key={label}
-            className="cursor-pointer px-0.5 border border-transparent hover:border-white"
-          >
-            {label}
-          </span>
-        ))}
-
-        <span className="flex-1 min-w-4" />
-
-        <span className="flex items-center gap-1.5 cursor-pointer" title="Compare items">
-          <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-            <path d="M12 3v18M5 8l-2 4h4zM19 8l-2 4h4z" strokeLinejoin="round" />
-          </svg>
-          VS
-        </span>
       </div>
     </header>
   );

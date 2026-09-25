@@ -1,9 +1,10 @@
 export default function Loading() {
   return (
-    <div className="min-h-[60vh] flex items-center justify-center">
-      <p className="text-sm text-muted" role="status">
-        Loading…
-      </p>
+    <div className="flex min-h-[60vh] items-center justify-center px-4">
+      <div className="flex items-center gap-3 rounded-full border border-border bg-surface px-5 py-3 text-sm text-text-secondary" role="status">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
+        Loading the catalog…
+      </div>
     </div>
   );
 }

@@ -13,11 +13,10 @@ export function CartBadge() {
       if (active) setTotalQty(s.totalQty);
     });
     void getCartState().then((s) => {
-      if (active) {
-        setTotalQty(s.totalQty);
-        if (getCartSummaryState().totalQty !== s.totalQty) {
-          import("@/lib/cart-client").then((m) => m.setCartSummary(s));
-        }
+      if (!active) return;
+      setTotalQty(s.totalQty);
+      if (getCartSummaryState().totalQty !== s.totalQty) {
+        import("@/lib/cart-client").then((m) => m.setCartSummary(s));
       }
     });
     return () => {
@@ -26,8 +25,10 @@ export function CartBadge() {
     };
   }, []);
 
+  if (totalQty === 0) return null;
+
   return (
-    <span className="absolute -top-1 left-2.5 text-orange-400 text-xs font-bold">
+    <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-extrabold text-accent-ink shadow-[0_0_0_3px_var(--surface)]">
       {totalQty}
     </span>
   );

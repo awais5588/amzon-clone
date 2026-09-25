@@ -1,155 +1,38 @@
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth/session";
 import { fetchOwnedOrder } from "@/lib/order-view";
 import { formatPrice, formatDate, etaDate, orderDisplayNumber } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-
 export const metadata = { title: "Order Confirmation" };
 
-export default async function OrderConfirmationPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+const timelineSteps: Array<{ label: string; sub: string }> = [
+  { label: "Order placed", sub: "We have it" },
+  { label: "Preparing", sub: "Getting things ready" },
+  { label: "On the way", sub: "With the carrier" },
+  { label: "Delivered", sub: "At your door" },
+];
+
+export default async function OrderConfirmationPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await requireUser("/account");
   const order = await fetchOwnedOrder(id, user._id);
   if (!order) notFound();
-
   const orderNumber = orderDisplayNumber(String(order.orderKey));
   const total = order.totals.totalCents;
 
   return (
-    <div className="max-w-[1000px] mx-auto px-3 py-6">
-      <div className="bg-card rounded-sm shadow-sm p-6">
-        <p className="text-[#007600] font-semibold">Thank you, your order has been placed.</p>
-        <p className="mt-1 text-sm text-muted">
-          Confirmation for order{" "}
-          <span className="font-medium text-headline">{orderNumber}</span> was sent to{" "}
-          <span className="font-medium text-headline">{user.email}</span>.
-        </p>
-      </div>
-
-      <div className="mt-4 bg-card rounded-sm shadow-sm p-5">
-        <h2 className="text-lg font-medium text-headline">Arriving Thursday, {etaDate(order.createdAt, order.shippingMethod.etaDays)}</h2>
-        {showTimeline(order.status) && (
-          <ol className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-            {timelineSteps.map((s) => {
-              const past = stepDone(order.status, s);
-              return (
-                <li
-                  key={s.label}
-                  className={`px-2 py-2 rounded-sm text-[12px] leading-tight ${
-                    past ? "bg-[#eefaf7] text-[#0b7a5b]" : "bg-row-hover text-muted"
-                  }`}
-                >
-                  <span className="block font-semibold text-[11px] uppercase tracking-wide">
-                    {s.label}
-                  </span>
-                  {s.sub}
-                </li>
-              );
-            })}
-          </ol>
-        )}
-      </div>
-
-      <div className="mt-4 bg-card rounded-sm shadow-sm p-5">
-        <h2 className="text-lg font-medium text-headline">Order details</h2>
-        <ul className="mt-2 divide-y divide-border">
-          {order.items.map((i) => (
-            <li key={i.variantSku} className="py-3 flex gap-3">
-              <div className="shrink-0 w-16 h-16 bg-[#f7fafa] rounded-sm overflow-hidden">
-                <Image
-                  src={i.image}
-                  alt={i.title}
-                  width={64}
-                  height={64}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[14px] text-headline leading-snug line-clamp-2">{i.title}</p>
-                <p className="text-[12px] text-muted mt-0.5">
-                  Configuration: {i.variantSku} · Qty: {i.qty}
-                </p>
-              </div>
-              <div className="shrink-0 text-right text-[14px] font-medium text-headline">
-                {formatPrice(i.unitPriceCents * i.qty)}
-              </div>
-            </li>
-          ))}
-        </ul>
-
-        <div className="border-t border-border pt-3 flex justify-end">
-          <div className="space-y-1 text-[14px]">
-            <div className="flex justify-between gap-6">
-              <span className="text-muted">Subtotal</span>
-              <span className="font-medium">{formatPrice(order.totals.subtotalCents)}</span>
-            </div>
-            <div className="flex justify-between gap-6">
-              <span className="text-muted">Shipping &amp; handling</span>
-              <span className="font-medium text-[#007600]">
-                {order.totals.shippingCents === 0 ? "FREE" : formatPrice(order.totals.shippingCents)}
-              </span>
-            </div>
-            <div className="flex justify-between gap-6">
-              <span className="text-muted">Estimated tax to be collected</span>
-              <span className="font-medium">{formatPrice(order.totals.taxCents)}</span>
-            </div>
-            <div className="flex justify-between gap-6 text-base font-semibold text-headline pt-1">
-              <span>Total for this order:</span>
-              <span>{formatPrice(total)}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-4 grid sm:grid-cols-2 gap-4">
-        <div className="bg-card rounded-sm shadow-sm p-5">
-          <h3 className="font-semibold text-headline text-sm">Shipping address</h3>
-          <p className="mt-1 text-[13px] text-muted leading-relaxed">
-            {order.shippingAddress.fullName}
-            <br />
-            {order.shippingAddress.line1}
-            {order.shippingAddress.line2 ? <>, {order.shippingAddress.line2}</> : null}
-            <br />
-            {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}
-            {order.shippingAddress.phone ? (
-              <>
-                <br />
-                Phone: {order.shippingAddress.phone}
-              </>
-            ) : null}
-          </p>
-        </div>
-        <div className="bg-card rounded-sm shadow-sm p-5">
-          <h3 className="font-semibold text-headline text-sm">Payment method</h3>
-          <p className="mt-1 text-[13px] text-muted">
-            {order.payment.brand} ending in {order.payment.last4}
-          </p>
-          <p className="mt-2 text-[13px] text-muted">Placed on {formatDate(order.createdAt)}</p>
-        </div>
-      </div>
-
-      <p className="mt-6 text-[13px]">
-        <Link href="/orders" className="text-link hover:underline">
-          ← View all orders
-        </Link>
-      </p>
+    <div className="morrow-container min-h-screen py-8 sm:py-12">
+      <section className="morrow-panel border-success/30 bg-success-soft p-6 sm:p-8"><p className="morrow-eyebrow !text-success">Order placed</p><h1 className="mt-3 font-display text-4xl text-headline">Thank you, {user.name}.</h1><p className="mt-3 max-w-xl text-sm leading-relaxed text-text-secondary">Your order <span className="font-bold text-headline">#{orderNumber}</span> is confirmed. A summary has been sent to <span className="font-semibold text-headline">{user.email}</span>.</p></section>
+      <section className="morrow-panel mt-5 p-5 sm:p-6"><p className="morrow-eyebrow">Delivery outlook</p><h2 className="mt-2 font-display text-3xl text-headline">Arriving {etaDate(order.createdAt, order.shippingMethod.etaDays)}</h2>{showTimeline(order.status) && <ol className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">{timelineSteps.map((step) => { const done = stepDone(order.status, step); return <li key={step.label} className={`rounded-xl border p-3 text-center text-xs ${done ? "border-success/30 bg-success-soft text-success" : "border-border bg-surface text-text-muted"}`}><span className="block text-[10px] font-bold uppercase tracking-[0.12em]">{step.label}</span><span className="mt-1 block text-[11px]">{step.sub}</span></li>; })}</ol>}</section>
+      <section className="morrow-panel mt-5 p-5 sm:p-6"><h2 className="font-display text-2xl text-headline">Order details</h2><ul className="mt-3 divide-y divide-border">{order.items.map((item) => <li key={item.variantSku} className="flex gap-3 py-4"><div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-border bg-surface-raised"><Image src={item.image} alt={item.title} width={64} height={64} className="h-full w-full object-contain p-1" /></div><div className="min-w-0 flex-1"><p className="line-clamp-2 text-sm font-semibold text-headline">{item.title}</p><p className="mt-1 text-xs text-text-muted">Option: {item.variantSku} · Quantity: {item.qty}</p></div><div className="shrink-0 text-right text-sm font-bold text-headline">{formatPrice(item.unitPriceCents * item.qty)}</div></li>)}</ul><div className="mt-4 flex justify-end border-t border-border pt-4"><div className="w-full max-w-xs space-y-2 text-sm"><div className="flex justify-between"><span className="text-text-secondary">Subtotal</span><span className="font-semibold text-headline">{formatPrice(order.totals.subtotalCents)}</span></div><div className="flex justify-between"><span className="text-text-secondary">Delivery</span><span className="font-semibold text-success">{order.totals.shippingCents === 0 ? "Complimentary" : formatPrice(order.totals.shippingCents)}</span></div><div className="flex justify-between"><span className="text-text-secondary">Estimated tax</span><span className="font-semibold text-headline">{formatPrice(order.totals.taxCents)}</span></div><div className="flex justify-between border-t border-border pt-2 text-base"><span className="font-bold text-headline">Total</span><span className="font-extrabold text-headline">{formatPrice(total)}</span></div></div></div></section>
+      <div className="mt-5 grid gap-5 sm:grid-cols-2"><section className="morrow-panel p-5"><h2 className="text-sm font-bold text-headline">Shipping address</h2><p className="mt-2 text-sm leading-relaxed text-text-secondary">{order.shippingAddress.fullName}<br />{order.shippingAddress.line1}{order.shippingAddress.line2 ? <>, {order.shippingAddress.line2}</> : null}<br />{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}{order.shippingAddress.phone ? <><br />Phone: {order.shippingAddress.phone}</> : null}</p></section><section className="morrow-panel p-5"><h2 className="text-sm font-bold text-headline">Payment method</h2><p className="mt-2 text-sm text-text-secondary">{order.payment.brand} ending in {order.payment.last4}</p><p className="mt-1 text-xs text-text-muted">Placed on {formatDate(order.createdAt)}</p></section></div>
+      <div className="mt-6 flex flex-wrap gap-4"><Link href="/orders" className="morrow-button-secondary">View all orders</Link><Link href="/search" className="morrow-link self-center text-sm">Continue browsing <span aria-hidden="true">↗</span></Link></div>
     </div>
   );
 }
-
-const timelineSteps: Array<{ label: string; sub: string }> = [
-  { label: "Order placed", sub: "We've received it" },
-  { label: "Preparing shipment", sub: "Arriving Thursday" },
-  { label: "Dispatched", sub: "" },
-  { label: "Delivered", sub: "" },
-];
 
 function stepDone(status: string, step: { label: string }): boolean {
   if (status === "Cancelled") return false;

@@ -32,11 +32,10 @@ export interface DeliveryPromise {
   nonMembers: string;
 }
 
-/** Simulated US-context delivery promises, keyed to "today" (mirrors the screenshot copy). */
 export function deliveryPromises(now: Date = new Date()): DeliveryPromise {
   return {
-    members: `Join Prime to get FREE delivery Tomorrow, ${monthDayOf(addDays(now, 1))}`,
-    nonMembers: `Or Non-members get FREE delivery ${freeDeliveryDate(now)}`,
+    members: `Complimentary delivery tomorrow, ${monthDayOf(addDays(now, 1))}`,
+    nonMembers: `Delivery estimate: ${freeDeliveryDate(now)}`,
   };
 }
 
@@ -65,7 +64,6 @@ export function etaDate(from: Date | string, etaDays: number): string {
   return weekdayMonthDayOf(d);
 }
 
-/** Amazon-style display order number derived deterministically from the idempotency key. */
 export function orderDisplayNumber(orderKey: string): string {
   const digest = (seed: string): string => {
     let h1 = 0x811c9dc5;

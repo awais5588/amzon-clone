@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connectDB } from "@/lib/mongoose";
 import { ProductModel, ReviewModel, type Product } from "@/lib/models";
@@ -14,69 +15,51 @@ export const dynamic = "force-dynamic";
 
 type ProductRow = Product & { _id: unknown; createdAt?: unknown };
 
-function serializeProduct(p: ProductRow): ProductViewData {
-  const variants: ProductVariantView[] = p.variants.map((v) => ({
-    label: v.label,
-    sku: v.sku,
-    priceCents: v.priceCents,
-    listPriceCents: v.listPriceCents ?? undefined,
-    stock: v.stock,
-    images: v.images ?? [],
+function serializeProduct(product: ProductRow): ProductViewData {
+  const variants: ProductVariantView[] = product.variants.map((variant) => ({
+    label: variant.label,
+    sku: variant.sku,
+    priceCents: variant.priceCents,
+    listPriceCents: variant.listPriceCents ?? undefined,
+    stock: variant.stock,
+    images: variant.images ?? [],
   }));
   return {
-    productId: String(p._id),
-    slug: p.slug,
-    title: p.title,
-    brand: p.brand,
-    isAmazonBrand: p.isAmazonBrand,
-    description: p.description,
-    bullets: p.bullets ?? [],
-    images: p.images ?? [],
-    ratingAvg: p.ratingAvg,
-    ratingCount: p.ratingCount,
-    boughtInPastMonth: p.boughtInPastMonth,
-    bestsellerRank: p.bestsellerRank || undefined,
-    primeEligible: p.primeEligible,
-    freeReturns: p.freeReturns,
-    carbonImpact: p.carbonImpact,
-    seller: p.seller,
+    productId: String(product._id),
+    slug: product.slug,
+    title: product.title,
+    brand: product.brand,
+    isAmazonBrand: product.isAmazonBrand,
+    description: product.description,
+    bullets: product.bullets ?? [],
+    images: product.images ?? [],
+    ratingAvg: product.ratingAvg,
+    ratingCount: product.ratingCount,
+    boughtInPastMonth: product.boughtInPastMonth,
+    bestsellerRank: product.bestsellerRank || undefined,
+    primeEligible: product.primeEligible,
+    freeReturns: product.freeReturns,
+    carbonImpact: product.carbonImpact,
+    seller: product.seller,
     variants,
   };
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   await connectDB();
-  const doc = (await ProductModel.findOne({ slug })
-    .lean()
-    .exec()) as unknown as ProductRow | null;
-  return { title: doc?.title ?? slug };
+  const document = (await ProductModel.findOne({ slug }).lean().exec()) as unknown as ProductRow | null;
+  return { title: document?.title ?? slug, description: document?.description };
 }
 
-export default async function ProductPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   await connectDB();
+  const document = (await ProductModel.findOne({ slug }).lean().exec()) as unknown as ProductRow | null;
+  if (!document) notFound();
 
-  const doc = (await ProductModel.findOne({ slug })
-    .lean()
-    .exec()) as unknown as ProductRow | null;
-  if (!doc) notFound();
-
-  const productId = String(doc._id);
-
-  const reviewDocs = (await ReviewModel.find({ product: productId })
-    .sort({ helpfulCount: -1 })
-    .limit(8)
-    .lean()
-    .exec()) as unknown as Array<{
+  const productId = String(document._id);
+  const reviewDocuments = (await ReviewModel.find({ product: productId }).sort({ helpfulCount: -1 }).limit(8).lean().exec()) as unknown as Array<{
     userName: string;
     rating: number;
     title: string;
@@ -85,112 +68,57 @@ export default async function ProductPage({
     helpfulCount: number;
     createdAt: unknown;
   }>;
-
-  const reviews: ReviewView[] = reviewDocs.map((r) => ({
-    userName: r.userName,
-    rating: r.rating,
-    title: r.title,
-    body: r.body,
-    verifiedPurchase: r.verifiedPurchase,
-    helpfulCount: r.helpfulCount,
-    createdAt: new Date(String(r.createdAt)).toISOString(),
+  const reviews: ReviewView[] = reviewDocuments.map((review) => ({
+    userName: review.userName,
+    rating: review.rating,
+    title: review.title,
+    body: review.body,
+    verifiedPurchase: review.verifiedPurchase,
+    helpfulCount: review.helpfulCount,
+    createdAt: new Date(String(review.createdAt)).toISOString(),
   }));
 
-  const relatedDocs = (await ProductModel.find({
-    slug: { $ne: slug },
-    categoryPath: doc.categoryPath[0],
-  })
-    .limit(4)
-    .lean()
-    .exec()) as unknown as ProductRow[];
-
-  const fallbackDocs = relatedDocs.length
-    ? relatedDocs
-    : ((await ProductModel.find({ slug: { $ne: slug } })
-        .limit(4)
-        .lean()
-        .exec()) as unknown as ProductRow[]);
-
-  const cartState = await getCartState();
+  const relatedDocuments = (await ProductModel.find({ slug: { $ne: slug }, categoryPath: document.categoryPath[0] }).limit(4).lean().exec()) as unknown as ProductRow[];
+  const fallbackDocuments = relatedDocuments.length
+    ? relatedDocuments
+    : ((await ProductModel.find({ slug: { $ne: slug } }).limit(4).lean().exec()) as unknown as ProductRow[]);
+  const cart = await getCartState();
   const initialQtyBySku: Record<string, number> = {};
-  if (cartState) {
-    for (const item of cartState.items) {
-      if (doc.variants.some((v) => v.sku === item.variantSku)) {
-        initialQtyBySku[item.variantSku] = item.qty;
-      }
-    }
+  for (const item of cart.items) {
+    if (document.variants.some((variant) => variant.sku === item.variantSku)) initialQtyBySku[item.variantSku] = item.qty;
   }
-
-  const related = fallbackDocs.map((d) => productToCard(d));
+  const related = fallbackDocuments.map((product) => productToCard(product));
 
   return (
-    <div className="max-w-[1500px] mx-auto px-3 py-4 min-h-screen">
-      {/* Title / brand / ratings header */}
-      <ProductsHeader
-        title={doc.title}
-        brand={doc.brand}
-        isAmazonBrand={doc.isAmazonBrand}
-        ratingAvg={doc.ratingAvg}
-        ratingCount={doc.ratingCount}
-        boughtInPastMonth={doc.boughtInPastMonth}
-      />
+    <div className="morrow-container min-h-screen py-7 sm:py-10 lg:py-12">
+      <nav className="mb-6 flex items-center gap-2 text-xs text-text-muted" aria-label="Breadcrumb">
+        <Link href="/" className="hover:text-accent">Home</Link>
+        <span aria-hidden="true">/</span>
+        <Link href="/search" className="hover:text-accent">Catalog</Link>
+        <span aria-hidden="true">/</span>
+        <span className="truncate text-text-secondary">{document.title}</span>
+      </nav>
+      <ProductsHeader title={document.title} brand={document.brand} isAmazonBrand={document.isAmazonBrand} ratingAvg={document.ratingAvg} ratingCount={document.ratingCount} boughtInPastMonth={document.boughtInPastMonth} />
+      <div className="mt-8"><ProductView product={serializeProduct(document)} initialQtyBySku={initialQtyBySku} deliveryDate={deliveryPromises()} /></div>
 
-      <div className="mt-4">
-        <ProductView
-          product={serializeProduct(doc)}
-          initialQtyBySku={initialQtyBySku}
-          deliveryDate={deliveryPromises()}
-        />
-      </div>
-
-      {/* Product details */}
-      <section className="bg-card rounded-sm shadow-sm px-4 py-5 mt-4">
-        <h2 className="text-xl font-semibold text-headline mb-3">Product details</h2>
-        {(doc.bullets?.length ?? 0) > 0 && (
-          <ul className="list-disc pl-5 space-y-1.5 text-sm text-headline mb-4">
-            {doc.bullets.map((b, i) => (
-              <li key={i}>{b}</li>
-            ))}
-          </ul>
-        )}
-        <p className="text-sm text-[#0f1111] leading-relaxed">{doc.description}</p>
-
-        <div className="mt-4 grid sm:grid-cols-2 gap-4 text-[13px] text-muted border-t border-border pt-3">
-          <p>
-            <span className="font-semibold text-headline">Brand:</span> {doc.brand}
-          </p>
-          <p>
-            <span className="font-semibold text-headline">Bought in past month:</span>{" "}
-            {formatThousands(doc.boughtInPastMonth)}+
-          </p>
-          <p>
-            <span className="font-semibold text-headline">Rating:</span> {formatRating(doc.ratingAvg)}{" "}
-            out of 5 ({formatThousands(doc.ratingCount)} ratings)
-          </p>
-          {doc.carbonImpact && (
-            <p>
-              <span className="font-semibold text-headline">Carbon impact:</span> {doc.carbonImpact}
-            </p>
-          )}
+      <section className="morrow-panel mt-10 p-5 sm:p-7">
+        <p className="morrow-eyebrow">The useful bits</p>
+        <h2 className="mt-2 font-display text-3xl text-headline">Product details</h2>
+        {document.bullets.length > 0 && <ul className="mt-5 list-disc space-y-2 pl-5 text-sm leading-relaxed text-text-secondary">{document.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}</ul>}
+        <p className="mt-5 max-w-4xl text-sm leading-relaxed text-text-secondary">{document.description}</p>
+        <div className="mt-6 grid gap-4 border-t border-border pt-5 text-sm text-text-secondary sm:grid-cols-2">
+          <p><span className="font-bold text-headline">Brand</span><br />{document.brand}</p>
+          <p><span className="font-bold text-headline">Customer rating</span><br />{formatRating(document.ratingAvg)} out of 5 · {formatThousands(document.ratingCount)} ratings</p>
+          <p><span className="font-bold text-headline">Popularity</span><br />{formatThousands(document.boughtInPastMonth)}+ bought in the past month</p>
+          <p><span className="font-bold text-headline">Carbon impact</span><br />{document.carbonImpact}</p>
         </div>
       </section>
 
-      {/* Reviews */}
-      <div className="mt-4" id="customer-reviews">
-        <Reviews
-          average={doc.ratingAvg}
-          total={doc.ratingCount}
-          bought={doc.boughtInPastMonth}
-          reviews={reviews}
-        />
+      <div className="mt-10" id="customer-reviews">
+        <Reviews average={document.ratingAvg} total={document.ratingCount} bought={document.boughtInPastMonth} reviews={reviews} />
       </div>
 
-      {/* Related */}
-      {related.length > 0 && (
-        <div className="mt-4">
-          <Shelf title="Products related to this item" note={`Similar to ${doc.brand} picks`} cards={related} />
-        </div>
-      )}
+      {related.length > 0 && <div className="mt-10"><Shelf title="You might also like" note={`More considered picks from ${document.brand}.`} cards={related} /></div>}
     </div>
   );
 }

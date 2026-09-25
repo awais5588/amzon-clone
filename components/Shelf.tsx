@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ProductCardData } from "./ProductCard";
 import { ProductCard } from "./ProductCard";
 
@@ -14,28 +15,22 @@ export function Shelf({
 }) {
   if (cards.length === 0) return null;
   return (
-    <section className="bg-card rounded-sm shadow-sm px-4 pt-4 pb-5">
-      <div className="mb-3 flex items-baseline justify-between gap-3">
+    <section className="rounded-2xl border border-border bg-surface p-5 shadow-[0_14px_34px_rgba(0,0,0,0.14)] sm:p-6">
+      <div className="mb-5 flex items-end justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-headline">{title}</h2>
-          {note && <p className="text-[13px] text-muted">{note}</p>}
+          <p className="morrow-eyebrow">Curated for you</p>
+          <h2 className="mt-2 font-display text-2xl leading-tight text-headline sm:text-3xl">{title}</h2>
+          {note && <p className="mt-1 text-sm text-text-secondary">{note}</p>}
         </div>
         {seeMore && (
-          <a
-            href={seeMore.href}
-            className="text-[13px] text-link hover:text-link-hover hover:underline whitespace-nowrap shrink-0"
-          >
-            {seeMore.label ?? (
-              <>
-                See more <span aria-hidden="true">›</span>
-              </>
-            )}
-          </a>
+          <Link href={seeMore.href} className="morrow-link shrink-0 text-sm">
+            {seeMore.label ?? "View all"} <span aria-hidden="true">↗</span>
+          </Link>
         )}
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
-        {cards.map((c) => (
-          <ProductCard key={c.slug} product={c} />
+      <div className="-mx-1 grid grid-cols-2 gap-3 px-1 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+        {cards.map((card) => (
+          <ProductCard key={card.slug} product={card} />
         ))}
       </div>
     </section>

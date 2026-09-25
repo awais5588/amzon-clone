@@ -23,53 +23,35 @@ export function Reviews({
   reviews: ReviewView[];
 }) {
   return (
-    <section className="bg-card rounded-sm shadow-sm px-4 py-5">
-      <h2 className="text-xl font-semibold text-headline mb-3">Customer reviews</h2>
-
-      <div className="flex flex-wrap items-start gap-6 mb-5">
-        <div className="text-center min-w-[120px]">
-          <p className="text-4xl font-semibold text-headline">{formatRating(average)}</p>
-          <div className="flex justify-center my-1">
-            <Stars rating={average} />
-          </div>
-          <p className="text-[13px] text-muted">{formatThousands(total)} ratings</p>
-          {bought > 0 && (
-            <p className="text-[12px] text-muted">{formatThousands(bought)}+ bought in past month</p>
-          )}
+    <section className="rounded-2xl border border-border bg-surface p-5 shadow-[0_14px_34px_rgba(0,0,0,0.14)] sm:p-7">
+      <p className="morrow-eyebrow">From the community</p>
+      <h2 className="mt-2 font-display text-3xl text-headline">Customer reviews</h2>
+      <div className="mt-6 flex flex-wrap items-start gap-8 border-b border-border pb-6">
+        <div className="min-w-32 text-center">
+          <p className="text-5xl font-extrabold tracking-[-0.06em] text-headline">{formatRating(average)}</p>
+          <div className="my-2 flex justify-center"><Stars rating={average} /></div>
+          <p className="text-xs text-text-secondary">{formatThousands(total)} ratings</p>
+          {bought > 0 && <p className="mt-1 text-xs text-text-muted">{formatThousands(bought)}+ bought recently</p>}
         </div>
-        <div className="flex-1 min-w-[220px] max-w-[420px] text-[13px]">
-          <p className="text-muted mb-1">
-            Rating: {formatRating(average)} out of 5 stars from {formatThousands(total)} customer
-            ratings.
-          </p>
-          <p className="text-muted">Customers say the most helpful reviews are shown first.</p>
+        <div className="max-w-lg flex-1 text-sm leading-relaxed text-text-secondary">
+          <p>Rated {formatRating(average)} out of 5 by {formatThousands(total)} customers.</p>
+          <p className="mt-1 text-text-muted">Helpful reviews are shown first to keep the signal clear.</p>
         </div>
       </div>
 
       {reviews.length === 0 ? (
-        <p className="text-sm text-muted">No customer reviews yet for this item from the US.</p>
+        <p className="py-6 text-sm text-text-secondary">No customer reviews yet for this item.</p>
       ) : (
         <ul className="divide-y divide-border">
-          {reviews.map((r, i) => (
-            <li key={`${r.userName}-${i}`} className="py-4">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[15px] font-semibold text-link">{r.userName}</span>
-                {r.verifiedPurchase && (
-                  <span className="text-[12px] text-[#007600] flex items-center gap-0.5">
-                    <CheckIcon /> Verified Purchase
-                  </span>
-                )}
+          {reviews.map((review, index) => (
+            <li key={`${review.userName}-${index}`} className="py-5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-bold text-headline">{review.userName}</span>
+                {review.verifiedPurchase && <span className="flex items-center gap-1 rounded-full bg-success-soft px-2 py-1 text-[11px] font-semibold text-success"><CheckIcon /> Verified purchase</span>}
               </div>
-              <div className="flex items-center gap-2 mt-1">
-                <Stars rating={r.rating} />
-                <h3 className="text-sm font-semibold text-headline">{r.title}</h3>
-              </div>
-              <p className="text-sm text-headline mt-1.5 leading-relaxed">{r.body}</p>
-              <p className="text-[12px] text-faint mt-2">
-                Reviewed in the United States on {formatDate(r.createdAt)}
-                <span className="mx-1">·</span>
-                {r.helpfulCount} people found this helpful
-              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2"><Stars rating={review.rating} /><h3 className="text-sm font-bold text-headline">{review.title}</h3></div>
+              <p className="mt-2 text-sm leading-relaxed text-text-secondary">{review.body}</p>
+              <p className="mt-3 text-xs text-text-muted">Reviewed on {formatDate(review.createdAt)} · {review.helpfulCount} people found this helpful</p>
             </li>
           ))}
         </ul>
@@ -80,7 +62,7 @@ export function Reviews({
 
 function CheckIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor" aria-hidden="true">
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden="true">
       <path d="M9 17.7 4.5 13.2l1.4-1.4L9 14.9l9.1-9.1 1.4 1.4z" />
     </svg>
   );

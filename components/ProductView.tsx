@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { formatPrice, deliveryPromises, type DeliveryPromise } from "@/lib/format";
-import { addToCart } from "@/app/_actions/cart";
+import { addToCart, getCartState } from "@/app/_actions/cart";
 import { setCartSummary, subscribeCartSummary } from "@/lib/cart-client";
 
 export interface ProductVariantView {
@@ -36,14 +36,6 @@ export interface ProductViewData {
   variants: ProductVariantView[];
 }
 
-function ChevronDown() {
-  return (
-    <svg viewBox="0 0 24 24" className="w-3 h-3" fill="currentColor" aria-hidden="true">
-      <path d="M7 9l5 5 5-5z" />
-    </svg>
-  );
-}
-
 export function ProductView({
   product,
   initialQtyBySku,
@@ -64,245 +56,144 @@ export function ProductView({
 
   useEffect(() => {
     let active = true;
-    const unsub = subscribeCartSummary((s) => {
+    const unsubscribe = subscribeCartSummary((state) => {
       if (!active) return;
-      const item = s.items?.find((i) => i.variantSku === sku);
+      const item = state.items?.find((line) => line.variantSku === sku);
       setInCart(item?.qty ?? 0);
     });
-    void import("@/app/_actions/cart").then((m) =>
-      m.getCartState().then((s) => {
-        if (!active) return;
-        const item = s.items.find((i) => i.variantSku === sku);
-        setInCart(item?.qty ?? 0);
-      })
-    );
+    void getCartState().then((state) => {
+      if (!active) return;
+      const item = state.items.find((line) => line.variantSku === sku);
+      setInCart(item?.qty ?? 0);
+    });
     return () => {
       active = false;
-      unsub();
+      unsubscribe();
     };
   }, [sku]);
 
-  const variant = useMemo(
-    () => product.variants.find((v) => v.sku === sku) ?? product.variants[0],
-    [product.variants, sku]
-  );
-
+  const variant = useMemo(() => product.variants.find((item) => item.sku === sku) ?? product.variants[0], [product.variants, sku]);
   const images = useMemo(() => {
     const list = variant?.images?.length ? variant.images : product.images;
-    return list.length ? list : ["https://picsum.photos/seed/no-image/500/500"];
+    return list.length ? list : ["/images/placeholder.png"];
   }, [variant, product.images]);
 
-  const selectVariant = useCallback(
-    (nextSku: string) => {
-      setSku(nextSku);
-      setImageIndex(0);
-      setQty(1);
-      setFeedback(null);
-    },
-    []
-  );
+  const selectVariant = useCallback((nextSku: string) => {
+    setSku(nextSku);
+    setImageIndex(0);
+    setQty(1);
+    setFeedback(null);
+  }, []);
 
-  const run = useCallback(
-    async (mode: "add" | "buy") => {
-      if (!variant) return;
-      setPending(mode);
-      setFeedback(null);
-      try {
-        const res = await addToCart({ productId: product.productId, variantSku: variant.sku, qty });
-        setCartSummary(res);
-        setFeedback("added");
-        if (mode === "buy") router.push("/cart");
-      } catch {
-        setFeedback("error");
-      } finally {
-        setPending(null);
-      }
-    },
-    [product.productId, variant, qty, router]
-  );
+  const run = useCallback(async (mode: "add" | "buy") => {
+    if (!variant) return;
+    setPending(mode);
+    setFeedback(null);
+    try {
+      const result = await addToCart({ productId: product.productId, variantSku: variant.sku, qty });
+      setCartSummary(result);
+      setFeedback("added");
+      if (mode === "buy") router.push("/cart");
+    } catch {
+      setFeedback("error");
+    } finally {
+      setPending(null);
+    }
+  }, [product.productId, variant, qty, router]);
 
   const outOfStock = !variant || variant.stock <= 0;
   const maxQty = variant ? Math.max(1, Math.min(variant.stock, 10)) : 1;
+  const hasDiscount = Boolean(variant?.listPriceCents && variant.listPriceCents > variant.priceCents);
 
   return (
-    <div className="grid md:grid-cols-[minmax(0,1fr)_400px] gap-6">
-      {/* Gallery */}
-      <div>
-        <div className="bg-card rounded-sm border border-border flex items-center justify-center p-4 sticky md:top-3">
-          <div className="relative aspect-square w-full max-w-[420px]">
-            <Image
-              src={images[imageIndex]}
-              alt={product.title}
-              fill
-              className="object-contain"
-              sizes="(min-width:768px) 40vw, 90vw"
-              priority
-            />
-          </div>
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)] lg:gap-10">
+      <div className="lg:sticky lg:top-24 lg:self-start">
+        <div className="relative aspect-square overflow-hidden rounded-2xl border border-border bg-surface p-5 shadow-[0_18px_46px_rgba(0,0,0,0.24)] sm:p-10">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(167,139,250,0.12),transparent_52%)]" />
+          <Image
+            src={images[imageIndex]}
+            alt={product.title}
+            fill
+            className="relative object-contain p-6"
+            sizes="(min-width:1024px) 55vw, 92vw"
+            priority
+          />
+          {product.bestsellerRank && <span className="absolute left-5 top-5 rounded-full border border-accent/30 bg-surface-raised/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-accent backdrop-blur">{product.bestsellerRank}</span>}
         </div>
         {images.length > 1 && (
-          <div className="mt-2 flex gap-2 flex-wrap justify-center">
-            {images.map((img, i) => (
+          <div className="mt-3 flex flex-wrap justify-center gap-2" role="list" aria-label="Product images">
+            {images.map((image, index) => (
               <button
-                key={img + i}
+                key={`${image}-${index}`}
                 type="button"
-                onClick={() => setImageIndex(i)}
-                aria-label={`View image ${i + 1}`}
-                className={`w-14 h-14 border rounded-sm overflow-hidden ${i === imageIndex ? "border-[#c45500] ring-1 ring-[#c45500]" : "border-border hover:border-link"}`}
+                onClick={() => setImageIndex(index)}
+                aria-label={`View image ${index + 1}`}
+                aria-pressed={index === imageIndex}
+                className={`h-16 w-16 overflow-hidden rounded-xl border bg-surface-raised p-1 transition-colors ${index === imageIndex ? "border-accent ring-1 ring-accent" : "border-border hover:border-accent"}`}
               >
-                <Image src={img} alt="" width={56} height={56} className="w-full h-full object-cover" />
+                <Image src={image} alt="" width={64} height={64} className="h-full w-full object-contain" />
               </button>
             ))}
           </div>
         )}
       </div>
 
-      {/* Buy box */}
-      <div className="bg-card rounded-sm border border-border p-4">
-        {product.bestsellerRank && (
-          <p className="text-[13px] text-deal font-medium mb-1">{product.bestsellerRank}</p>
-        )}
-
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-2xl font-medium text-headline">{formatPrice(variant?.priceCents ?? 0)}</span>
-          {variant?.listPriceCents && variant.listPriceCents > (variant?.priceCents ?? 0) && (
-            <del className="text-sm text-faint">{formatPrice(variant.listPriceCents)}</del>
-          )}
+      <div className="rounded-2xl border border-border bg-surface p-5 shadow-[0_18px_46px_rgba(0,0,0,0.18)] sm:p-7">
+        {product.bestsellerRank && <p className="morrow-eyebrow">A Morrow favorite</p>}
+        <div className="mt-3 flex flex-wrap items-baseline gap-2">
+          <span className="text-4xl font-extrabold tracking-[-0.055em] text-headline">{formatPrice(variant?.priceCents ?? 0)}</span>
+          {hasDiscount && <del className="text-sm text-text-muted">{formatPrice(variant!.listPriceCents!)}</del>}
         </div>
-        {variant?.listPriceCents && variant.listPriceCents > (variant?.priceCents ?? 0) && (
-          <p className="text-[13px] text-deal font-medium mt-0.5">
-            Save {formatPrice(variant.listPriceCents - (variant?.priceCents ?? 0))}
-          </p>
-        )}
+        {hasDiscount && <p className="mt-1 text-sm font-semibold text-success">Save {formatPrice(variant!.listPriceCents! - variant!.priceCents)}</p>}
 
-        {product.freeReturns && (
-          <p className="text-[13px] mt-1">
-            <span className="font-semibold text-headline">FREE Returns</span>
-            <span className="text-muted"> · Returnable within 30 days</span>
-          </p>
-        )}
-
-        {product.primeEligible && (
-          <p className="text-[13px] text-muted mt-1 flex items-center gap-1">
-            <span className="font-semibold text-muted">Carbon impact</span> <ChevronDown /> {product.carbonImpact}
-          </p>
-        )}
-
-        <div className="mt-3 text-[13px] leading-snug">
-          <p className="text-link underline-offset-2 hover:underline">{promise.members}</p>
-          <p className="text-muted">{promise.nonMembers}</p>
+        <div className="mt-5 space-y-2 border-y border-border py-4 text-sm">
+          {product.freeReturns && <p className="text-text-secondary"><span className="font-bold text-headline">Free returns</span> · Returnable within 30 days</p>}
+          {product.primeEligible && <p className="flex items-center gap-1.5 text-text-secondary"><span className="font-bold text-headline">Carbon impact</span> {product.carbonImpact}</p>}
+          <p className="text-text-secondary"><span className="font-bold text-headline">Delivery</span> {promise.members}</p>
+          <p className="text-text-muted">{promise.nonMembers}</p>
         </div>
 
-        <p className="text-[12px] text-faint mt-1.5">
-          Ships from Amazon.com
-          <span className="text-faint"> · Sold by {product.seller}</span>
+        <p className="mt-4 text-xs text-text-muted">Ships from the Morrow catalog network</p>
+
+        <p className={`mt-4 text-sm font-bold ${outOfStock ? "text-danger" : "text-success"}`}>
+          {outOfStock ? "Currently unavailable" : "In stock · Ready to ship"}
+          {!outOfStock && variant && variant.stock <= 10 && <span className="ml-1 font-medium text-danger">Only {variant.stock} left.</span>}
         </p>
 
-        {/* Stock state */}
-        {outOfStock ? (
-          <p className="mt-3 text-[15px] text-[#b12704] font-medium">Currently unavailable.</p>
-        ) : (
-          <p className="mt-3 text-[15px] text-[#007600] font-medium">
-            In Stock
-            {variant.stock <= 10 && (
-              <span className="text-[13px] text-[#b12704] font-normal">
-                {" "}
-                Only {variant.stock} left in stock — order soon.
-              </span>
-            )}
-          </p>
-        )}
-
-        {/* Variant selector */}
         {product.variants.length > 1 && (
-          <div className="mt-3">
-            <p className="text-[13px]">
-              <span className="text-faint">Style:</span>{" "}
-              <span className="font-medium">{variant?.label}</span>
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {product.variants.map((v) => {
-                const active = v.sku === variant?.sku;
+          <fieldset className="mt-5">
+            <legend className="text-sm font-bold text-headline">Choose an option</legend>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {product.variants.map((item) => {
+                const active = item.sku === variant?.sku;
                 return (
-                  <button
-                    key={v.sku}
-                    type="button"
-                    onClick={() => selectVariant(v.sku)}
-                    aria-pressed={active}
-                    className={`border rounded-sm px-3 py-2 text-left text-[13px] transition-colors ${
-                      active
-                        ? "border-[#007185] ring-1 ring-[#007185] bg-row-hover"
-                        : "border-border hover:border-link"
-                    } ${v.stock <= 0 ? "opacity-50" : ""}`}
-                  >
-                    <span className="block">{v.label}</span>
-                    <span className="block text-headline font-medium mt-0.5">
-                      {formatPrice(v.priceCents)}
-                    </span>
-                    {v.stock <= 0 && <span className="block text-[12px] text-[#b12704]">Unavailable</span>}
+                  <button key={item.sku} type="button" onClick={() => selectVariant(item.sku)} aria-pressed={active} className={`min-w-24 rounded-xl border px-3 py-2.5 text-left transition-[border-color,background-color,transform] hover:-translate-y-0.5 ${active ? "border-accent bg-accent-soft ring-1 ring-accent" : "border-border bg-surface-raised hover:border-accent"} ${item.stock <= 0 ? "opacity-50" : ""}`}>
+                    <span className="block text-sm font-semibold text-headline">{item.label}</span>
+                    <span className="mt-1 block text-xs text-text-secondary">{formatPrice(item.priceCents)}</span>
+                    {item.stock <= 0 && <span className="mt-1 block text-[11px] text-danger">Unavailable</span>}
                   </button>
                 );
               })}
             </div>
-          </div>
+          </fieldset>
         )}
 
-        {/* Qty + actions */}
         {!outOfStock && (
-          <div className="mt-4 flex items-center gap-2">
-            <label htmlFor="buy-qty" className="text-[13px] text-muted">
-              Qty:
-            </label>
-            <select
-              id="buy-qty"
-              value={qty}
-              onChange={(e) => setQty(Number(e.target.value))}
-              className="border border-border rounded-sm px-2 py-1 text-sm cursor-pointer"
-            >
-              {Array.from({ length: maxQty }, (_, i) => i + 1).map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <label htmlFor="buy-qty" className="text-sm font-semibold text-headline">Quantity</label>
+            <select id="buy-qty" value={qty} onChange={(event) => setQty(Number(event.target.value))} className="morrow-input w-24 py-2 text-sm">
+              {Array.from({ length: maxQty }, (_, index) => index + 1).map((number) => <option key={number} value={number}>{number}</option>)}
             </select>
-            {inCart > 0 && (
-              <span className="text-[13px] text-muted">
-                · <span className="text-headline font-medium">{inCart} in cart</span>
-              </span>
-            )}
+            {inCart > 0 && <span className="text-sm text-success">{inCart} already in your bag</span>}
           </div>
         )}
 
-        <div className="mt-3 flex flex-col gap-2">
-          <button
-            type="button"
-            disabled={outOfStock || pending !== null}
-            onClick={() => void run("add")}
-            className="bg-cta hover:bg-[#e6c200] border border-cta-border text-headline rounded-[8px] px-4 py-2 text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Add to Cart
-          </button>
-          <button
-            type="button"
-            disabled={outOfStock || pending !== null}
-            onClick={() => void run("buy")}
-            className="bg-buy hover:bg-buy-hover border border-[#a35c00] text-headline rounded-[8px] px-4 py-2 text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Buy Now
-          </button>
-          {feedback === "added" && (
-            <p className="text-[13px] text-[#007600] font-medium">Added to cart ✓</p>
-          )}
-          {feedback === "error" && (
-            <p className="text-[13px] text-[#b12704] font-medium">Something went wrong — please try again.</p>
-          )}
+        <div className="mt-6 flex flex-col gap-2">
+          <button type="button" disabled={outOfStock || pending !== null} onClick={() => void run("add")} className="morrow-button w-full disabled:cursor-not-allowed disabled:opacity-50">{pending === "add" ? "Adding…" : "Add to bag"}</button>
+          <button type="button" disabled={outOfStock || pending !== null} onClick={() => void run("buy")} className="morrow-button-secondary w-full disabled:cursor-not-allowed disabled:opacity-50">{pending === "buy" ? "Opening bag…" : "Buy now"}</button>
+          {feedback === "added" && <p className="text-sm font-semibold text-success">Added to your bag.</p>}
+          {feedback === "error" && <p className="text-sm font-semibold text-danger">Something went wrong. Please try again.</p>}
         </div>
-
-        {product.isAmazonBrand && (
-          <p className="mt-3 text-[12px] text-faint flex items-center gap-1">
-            <span className="border border-border rounded-sm px-1 py-0.5">Featured from Amazon brands ⓘ</span>
-          </p>
-        )}
       </div>
     </div>
   );

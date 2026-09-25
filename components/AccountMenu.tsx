@@ -27,13 +27,10 @@ export function AccountMenu({ user }: { user: { name: string } | null }) {
 
   if (!user) {
     return (
-      <Link
-        href="/signin"
-        className="flex items-center border border-transparent hover:border-white px-2 leading-tight"
-      >
+      <Link href="/signin" className="flex items-center rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-surface-hover">
         <span>
-          <span className="block text-xs text-[#cccccc]">Hello, sign in</span>
-          <span className="block text-sm font-bold">Account & Lists ▾</span>
+          <span className="block text-[11px] text-text-secondary">Welcome</span>
+          <span className="block text-sm font-bold text-headline">Sign in</span>
         </span>
       </Link>
     );
@@ -50,42 +47,37 @@ export function AccountMenu({ user }: { user: { name: string } | null }) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex items-center border border-transparent hover:border-white px-2 leading-tight cursor-pointer text-left"
+        className="flex items-center rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-surface-hover"
       >
         <span>
-          <span className="block text-xs text-[#cccccc]">Hello, {user.name}</span>
-          <span className="block text-sm font-bold">Account & Lists ▾</span>
+          <span className="block max-w-24 truncate text-[11px] text-text-secondary">Hello, {user.name}</span>
+          <span className="block text-sm font-bold text-headline">Account</span>
         </span>
+        <svg viewBox="0 0 12 12" className="ml-1.5 h-3 w-3 text-text-secondary" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+          <path d="m2.5 4.5 3.5 3 3.5-3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-72 bg-white text-headline rounded-b-md shadow-lg border border-border z-50">
-          <div className="p-3 border-b border-border">
-            <p className="text-[13px] text-muted leading-tight">Your account</p>
-            <p className="text-sm font-semibold truncate">{user.name}</p>
+        <div className="absolute right-0 top-full mt-2 w-64 overflow-hidden rounded-2xl border border-border bg-surface-raised p-2 shadow-[0_24px_60px_rgba(0,0,0,0.4)]">
+          <div className="border-b border-border px-3 py-2.5">
+            <p className="morrow-eyebrow">Your account</p>
+            <p className="mt-1 truncate text-sm font-bold text-headline">{user.name}</p>
           </div>
-          <div className="p-2 grid grid-cols-2 gap-y-1 text-[13px]">
-            <Link
-              href="/account"
-              onClick={() => setOpen(false)}
-              className="p-2 hover:bg-row-hover rounded-sm"
-            >
-              Your Account
+          <div className="grid gap-1 p-1 pt-2 text-sm">
+            <Link href="/account" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-text-secondary transition-colors hover:bg-surface-hover hover:text-headline">
+              Account overview
             </Link>
-            <Link
-              href="/orders"
-              onClick={() => setOpen(false)}
-              className="p-2 hover:bg-row-hover rounded-sm"
-            >
-              Your Orders
+            <Link href="/orders" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-text-secondary transition-colors hover:bg-surface-hover hover:text-headline">
+              Your orders
             </Link>
             <button
               type="button"
               disabled={busy}
               onClick={() => void handleSignOut()}
-              className="p-2 text-left hover:bg-row-hover rounded-sm disabled:opacity-50 cursor-pointer"
+              className="rounded-lg px-3 py-2.5 text-left text-text-secondary transition-colors hover:bg-surface-hover hover:text-headline disabled:opacity-50"
             >
-              {busy ? "Signing out…" : "Sign Out"}
+              {busy ? "Signing out…" : "Sign out"}
             </button>
           </div>
         </div>

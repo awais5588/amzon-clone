@@ -2,26 +2,14 @@ import Link from "next/link";
 
 export default function NotFound() {
   return (
-    <div className="min-h-[60vh] flex items-center justify-center px-4">
-      <div className="bg-card rounded-sm shadow-sm border border-border p-8 text-center max-w-md w-full">
-        <h1 className="text-3xl font-semibold text-headline">Page not found</h1>
-        <p className="mt-2 text-sm text-muted">
-          We looked everywhere but couldn&apos;t find this page. It may have been moved or never
-          existed.
-        </p>
-        <div className="mt-5 flex flex-col sm:flex-row gap-2 justify-center">
-          <Link
-            href="/"
-            className="bg-cta hover:bg-[#e6c200] border border-cta-border text-headline rounded-[8px] px-4 py-2 text-sm font-medium shadow-sm"
-          >
-            Go to homepage
-          </Link>
-          <Link
-            href="/search"
-            className="bg-white hover:bg-row-hover border border-border text-headline rounded-[8px] px-4 py-2 text-sm font-medium"
-          >
-            Search on Amazon
-          </Link>
+    <div className="flex min-h-[60vh] items-center justify-center px-4 py-16">
+      <div className="morrow-panel w-full max-w-md p-8 text-center sm:p-10">
+        <p className="morrow-eyebrow">Nothing here</p>
+        <h1 className="mt-3 font-display text-4xl text-headline">That page wandered off.</h1>
+        <p className="mt-3 text-sm leading-relaxed text-text-secondary">We couldn&apos;t find the page you were looking for, but there&apos;s plenty more to explore.</p>
+        <div className="mt-7 flex flex-col justify-center gap-2 sm:flex-row">
+          <Link href="/" className="morrow-button">Go home</Link>
+          <Link href="/search" className="morrow-button-secondary">Browse the catalog</Link>
         </div>
       </div>
     </div>

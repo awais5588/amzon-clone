@@ -10,7 +10,9 @@ function safeNext(value: unknown): string {
   return typeof value === "string" && value.startsWith("/") && !value.startsWith("//") ? value : "/";
 }
 
-export default async function SignInPage({ searchParams }: PageProps<"/signin">) {
+export default async function SignInPage({
+  searchParams,
+}: Readonly<{ searchParams: Promise<Record<string, string | string[] | undefined>> }>) {
   const user = await getSessionUser();
   if (user) redirect("/");
 

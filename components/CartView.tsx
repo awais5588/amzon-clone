@@ -5,19 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/format";
-import {
-  setCartSummary,
-  subscribeCartSummary,
-  type CartLineState,
-  type CartSummaryState,
-} from "@/lib/cart-client";
-import {
-  moveToCart,
-  removeSaved,
-  saveForLater,
-  setCartGift,
-  setCartItemQty,
-} from "@/app/_actions/cart";
+import { setCartSummary, subscribeCartSummary, type CartLineState, type CartSummaryState } from "@/lib/cart-client";
+import { moveToCart, removeSaved, saveForLater, setCartGift, setCartItemQty } from "@/app/_actions/cart";
 
 export interface SkuInfo {
   label: string;
@@ -39,95 +28,64 @@ export function CartView({
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [pendingSku, setPendingSku] = useState<string | null>(null);
   const [savingGift, setSavingGift] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsub = subscribeCartSummary((s) => setState(s));
-    void import("@/app/_actions/cart").then((m) =>
-      m.getCartState().then((s) => {
-        setCartSummary(s);
-        setState(s);
-      })
-    );
-    return unsub;
+    const unsubscribe = subscribeCartSummary((next) => setState(next));
+    void import("@/app/_actions/cart")
+      .then((module) =>
+        module.getCartState().then((next) => {
+          setCartSummary(next);
+          setState(next);
+        })
+      )
+      .catch(() => setActionError("We couldn't load your bag. Please try again."));
+    return unsubscribe;
   }, []);
 
   const lines = useMemo(() => state.items ?? [], [state.items]);
   const saved = useMemo(() => state.saved ?? [], [state.saved]);
-
   const isSelected = useCallback((sku: string) => selected[sku] !== false, [selected]);
-
-  const toggle = useCallback((sku: string) => {
-    setSelected((prev) => ({ ...prev, [sku]: prev[sku] === false }));
-  }, []);
-
-  const selectedLines = useMemo(
-    () => lines.filter((l) => isSelected(l.variantSku)),
-    [lines, isSelected]
-  );
-  const selectedCount = selectedLines.reduce((n, l) => n + l.qty, 0);
-  const selectedSubtotal = selectedLines.reduce((n, l) => n + l.qty * l.priceCents, 0);
-  const allSelected = lines.length > 0 && lines.every((l) => isSelected(l.variantSku));
-
+  const toggle = useCallback((sku: string) => setSelected((previous) => ({ ...previous, [sku]: previous[sku] === false })), []);
+  const selectedLines = useMemo(() => lines.filter((line) => isSelected(line.variantSku)), [lines, isSelected]);
+  const selectedCount = selectedLines.reduce((sum, line) => sum + line.qty, 0);
+  const selectedSubtotal = selectedLines.reduce((sum, line) => sum + line.qty * line.priceCents, 0);
+  const allSelected = lines.length > 0 && lines.every((line) => isSelected(line.variantSku));
   const toggleAll = useCallback(() => {
     const next: Record<string, boolean> = {};
-    for (const l of lines) next[l.variantSku] = !allSelected;
+    for (const line of lines) next[line.variantSku] = !allSelected;
     setSelected(next);
   }, [lines, allSelected]);
 
-  const run = useCallback(
-    async (sku: string, fn: () => Promise<CartSummaryState>) => {
-      setPendingSku(sku);
-      try {
-        const res = await fn();
-        setCartSummary(res);
-        setState(res);
-        setSelected((prev) => {
-          const next = { ...prev };
-          next[sku] = res.items?.some((i) => i.variantSku === sku) ?? false;
-          return next;
-        });
-      } catch {
-        // Swallow: the pending flag resets and quantities are left unchanged.
-      } finally {
-        setPendingSku(null);
-      }
-    },
-    []
-  );
+  const run = useCallback(async (sku: string, action: () => Promise<CartSummaryState>) => {
+    setPendingSku(sku);
+    setActionError(null);
+    try {
+      const result = await action();
+      setCartSummary(result);
+      setState(result);
+      setSelected((previous) => ({ ...previous, [sku]: result.items?.some((item) => item.variantSku === sku) ?? false }));
+    } catch {
+      setActionError("We couldn't update your bag. Please try again.");
+    } finally {
+      setPendingSku(null);
+    }
+  }, []);
 
-  const changeQty = useCallback(
-    (productId: string, sku: string, qty: number) =>
-      run(sku, () => setCartItemQty({ productId, variantSku: sku, qty })),
-    [run]
-  );
-
-  const remove = useCallback(
-    (productId: string, sku: string) =>
-      run(sku, () => setCartItemQty({ productId, variantSku: sku, qty: 0 })),
-    [run]
-  );
-
-  const doSaveForLater = useCallback(
-    (line: CartLineState) => run(line.variantSku, () => saveForLater(line.variantSku)),
-    [run]
-  );
-
-  const doMoveToCart = useCallback(
-    (line: CartLineState) => run(line.variantSku, () => moveToCart(line.variantSku)),
-    [run]
-  );
-
-  const doRemoveSaved = useCallback(
-    (line: CartLineState) => run(line.variantSku, () => removeSaved(line.variantSku)),
-    [run]
-  );
-
+  const changeQty = useCallback((productId: string, sku: string, qty: number) => run(sku, () => setCartItemQty({ productId, variantSku: sku, qty })), [run]);
+  const remove = useCallback((productId: string, sku: string) => run(sku, () => setCartItemQty({ productId, variantSku: sku, qty: 0 })), [run]);
+  const doSaveForLater = useCallback((line: CartLineState) => run(line.variantSku, () => saveForLater(line.variantSku)), [run]);
+  const doMoveToCart = useCallback((line: CartLineState) => run(line.variantSku, () => moveToCart(line.variantSku)), [run]);
+  const doRemoveSaved = useCallback((line: CartLineState) => run(line.variantSku, () => removeSaved(line.variantSku)), [run]);
   const doToggleGift = useCallback(async () => {
     setSavingGift(true);
+    setActionError(null);
     try {
-      const res = await setCartGift(!(state.isGift ?? false));
-      setCartSummary(res);
-      setState(res);
+      const result = await setCartGift(!(state.isGift ?? false));
+      setCartSummary(result);
+      setState(result);
+    } catch {
+      setActionError("We couldn't update your gift preference. Please try again.");
     } finally {
       setSavingGift(false);
     }
@@ -135,54 +93,41 @@ export function CartView({
 
   const checkout = useCallback(() => {
     if (selectedCount === 0) return;
-    const full = selectedLines.length === lines.length && lines.length > 0;
-    if (full || lines.length === 0) {
+    const all = selectedLines.length === lines.length && lines.length > 0;
+    if (all || lines.length === 0) {
       router.push("/checkout");
       return;
     }
-    const skus = selectedLines.map((l) => l.variantSku).sort();
+    const skus = selectedLines.map((line) => line.variantSku).sort();
     router.push(`/checkout?items=${encodeURIComponent(skus.join(","))}`);
-  }, [router, selectedCount, selectedLines, lines]);
+  }, [router, selectedCount, selectedLines, lines.length]);
 
   if (lines.length === 0 && saved.length === 0) {
     return (
-      <div className="bg-card rounded-sm shadow-sm p-8 text-center">
-        <h1 className="text-2xl font-medium text-headline">Your Amazon Cart is empty</h1>
-        <p className="text-sm text-muted mt-2">
-          Your shopping cart is waiting. Give it purpose — fill it with deals.
-        </p>
-        <Link
-          href="/"
-          className="inline-block mt-4 bg-cta hover:bg-[#e6c200] border border-cta-border text-headline rounded-[8px] px-5 py-2 text-sm font-medium shadow-sm"
-        >
-          Shop today&apos;s deals
-        </Link>
-      </div>
+      <section className="morrow-panel p-8 text-center sm:p-14">
+        <p className="morrow-eyebrow">A blank canvas</p>
+        <h1 className="mt-3 font-display text-4xl text-headline">Your bag is waiting.</h1>
+        <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-text-secondary">Find something worth keeping, or come back when you&apos;re ready to browse.</p>
+        <Link href="/search" className="morrow-button mt-7">Explore the catalog <span aria-hidden="true">↗</span></Link>
+      </section>
     );
   }
 
   return (
-    <div className="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-4 items-start">
-      {/* Left: cart lines */}
-      <div className="bg-card rounded-sm shadow-sm p-4">
-        <div className="flex flex-wrap items-end justify-between gap-2 border-b border-border pb-2">
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <section className="morrow-panel p-4 sm:p-6">
+        {actionError && <p role="alert" className="mb-5 rounded-xl border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger">{actionError}</p>}
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-5">
           <div>
-            <h1 className="text-2xl font-medium text-headline">Shopping Cart</h1>
-            {lines.length > 0 && (
-              <button
-                type="button"
-                onClick={toggleAll}
-                className="text-[13px] text-link hover:text-link-hover hover:underline"
-              >
-                {allSelected ? "Deselect all items" : "Select all items"}
-              </button>
-            )}
+            <p className="morrow-eyebrow">Selected for you</p>
+            <h2 className="mt-2 font-display text-3xl text-headline">Your bag</h2>
+            {lines.length > 0 && <button type="button" onClick={toggleAll} className="morrow-link mt-2 text-sm">{allSelected ? "Deselect all" : "Select all"}</button>}
           </div>
-          <span className="text-[13px] text-muted sm:w-24 sm:text-right">Price</span>
+          <span className="text-sm text-text-muted">{lines.length} {lines.length === 1 ? "selection" : "selections"}</span>
         </div>
 
         {lines.length === 0 ? (
-          <p className="text-sm text-muted py-6">No items in your cart.</p>
+          <p className="py-8 text-sm text-text-secondary">No items in your bag. Your saved items are below.</p>
         ) : (
           <ul className="divide-y divide-border">
             {lines.map((line) => {
@@ -192,128 +137,25 @@ export function CartView({
               const busy = pendingSku === line.variantSku;
               const maxOption = Math.max(10, stock, line.qty);
               return (
-                <li key={line.variantSku} className="py-4 flex flex-col sm:flex-row sm:gap-3">
-                  <div className="flex gap-3">
-                    <input
-                      type="checkbox"
-                      checked={isSelected(line.variantSku)}
-                      onChange={() => toggle(line.variantSku)}
-                      aria-label={`Select ${line.title}`}
-                      className="mt-1 w-4 h-4 accent-[#007185] cursor-pointer shrink-0"
-                    />
-
-                    <a
-                      href={info?.slug ? `/product/${info.slug}` : "#"}
-                      className="shrink-0 w-28 h-28 bg-[#f7fafa] rounded-sm overflow-hidden"
-                    >
-                      <Image src={line.image} alt={line.title} width={112} height={112} className="w-full h-full object-cover" />
-                    </a>
-                  </div>
-
-                  <div className="flex-1 min-w-0 sm:mt-0 mt-3">
-                    <a
-                      href={info?.slug ? `/product/${info.slug}` : "#"}
-                      className="text-[15px] leading-snug text-link hover:text-link-hover hover:underline line-clamp-2"
-                    >
-                      {line.title}
-                    </a>
-
-                    {out ? (
-                      <p className="text-[13px] text-[#b12704] font-medium mt-1">Currently unavailable</p>
-                    ) : (
-                      <p className="text-[13px] text-[#007600] font-medium mt-1">
-                        In Stock
-                        {stock <= 10 && (
-                          <span className="text-[#b12704] font-normal"> — only {stock} left</span>
-                        )}
-                      </p>
-                    )}
-
-                    <p className="text-[13px] text-muted mt-0.5">
-                      <span className="font-semibold text-headline">FREE delivery</span>{" "}
-                      {deliveryDate} available at checkout
-                    </p>
-                    <p className="text-[13px] text-muted">FREE Returns</p>
-                    {!out && (
-                      <p className="text-[13px] text-muted mt-0.5">
-                        <span className="text-link hover:underline cursor-pointer">This is a gift</span>
-                        <span className="text-faint"> — Learn more</span>
-                      </p>
-                    )}
-
-                    {info?.label && (
-                      <p className="text-[13px] text-muted mt-0.5">
-                        <span className="text-faint">Configuration:</span> {info.label}
-                      </p>
-                    )}
-
-                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]">
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void remove(line.productId, line.variantSku)}
-                        className="text-link hover:text-link-hover hover:underline disabled:opacity-50"
-                      >
-                        Delete
-                      </button>
-                      <span className="text-border">|</span>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void doSaveForLater(line)}
-                        className="text-link hover:text-link-hover hover:underline disabled:opacity-50"
-                      >
-                        Save for later
-                      </button>
-                      <span className="text-border">|</span>
-                      <span className="text-link cursor-default">Compare with similar items</span>
-                      <span className="text-border">|</span>
-                      <span className="text-link cursor-default">Share</span>
+                <li key={line.variantSku} className="flex gap-3 py-5 sm:gap-5">
+                  <input type="checkbox" checked={isSelected(line.variantSku)} onChange={() => toggle(line.variantSku)} aria-label={`Select ${line.title}`} className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-[#A78BFA]" />
+                  <Link href={info?.slug ? `/product/${info.slug}` : "#"} className="h-28 w-28 shrink-0 overflow-hidden rounded-xl border border-border bg-surface-raised sm:h-36 sm:w-36">
+                    <Image src={line.image || "/images/placeholder.png"} alt={line.title} width={144} height={144} className="h-full w-full object-contain p-2" />
+                  </Link>
+                  <div className="min-w-0 flex-1">
+                    <Link href={info?.slug ? `/product/${info.slug}` : "#"} className="line-clamp-2 text-sm font-bold leading-snug text-headline transition-colors hover:text-accent sm:text-base">{line.title}</Link>
+                    <p className={`mt-1.5 text-xs font-bold ${out ? "text-danger" : "text-success"}`}>{out ? "Currently unavailable" : stock <= 10 ? `In stock · Only ${stock} left` : "In stock · Ready to ship"}</p>
+                    <p className="mt-1 text-xs text-text-secondary">Delivery estimate: {deliveryDate}</p>
+                    {info?.label && <p className="mt-1 text-xs text-text-muted">Option: {info.label}</p>}
+                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
+                      <button type="button" disabled={busy} onClick={() => void remove(line.productId, line.variantSku)} className="morrow-link disabled:opacity-50">Remove</button>
+                      <span className="text-border-strong">·</span>
+                      <button type="button" disabled={busy} onClick={() => void doSaveForLater(line)} className="morrow-link disabled:opacity-50">Save for later</button>
                     </div>
-
-                    <div className="sm:hidden mt-2 flex items-center justify-between">
-                      <p className="text-[15px] font-semibold text-headline">
-                        {formatPrice(line.priceCents * line.qty)}
-                      </p>
-                      {!out && (
-                        <select
-                          value={line.qty}
-                          disabled={busy}
-                          onChange={(e) => void changeQty(line.productId, line.variantSku, Number(e.target.value))}
-                          className="border border-border rounded-sm px-1.5 py-1 text-[13px] cursor-pointer bg-[#f0f2f2] hover:bg-[#e3e6e6]"
-                          aria-label={`Quantity for ${line.title}`}
-                        >
-                          {Array.from({ length: maxOption }, (_, i) => i + 1).map((n) => (
-                            <option key={n} value={n}>
-                              Qty: {n}
-                            </option>
-                          ))}
-                        </select>
-                      )}
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-lg font-extrabold tracking-[-0.04em] text-headline">{formatPrice(line.priceCents * line.qty)}</p>
+                      {!out && <label className="flex items-center gap-2 text-xs text-text-secondary"><span>Quantity</span><select value={line.qty} disabled={busy} onChange={(event) => void changeQty(line.productId, line.variantSku, Number(event.target.value))} className="morrow-input w-20 py-1.5 text-xs">{Array.from({ length: maxOption }, (_, index) => index + 1).map((number) => <option key={number} value={number}>{number}</option>)}</select></label>}
                     </div>
-                  </div>
-
-                  <div className="hidden sm:block w-24 shrink-0 text-right">
-                    <p className="text-lg font-semibold text-headline">
-                      {formatPrice(line.priceCents * line.qty)}
-                    </p>
-                    {!out && (
-                      <label className="inline-flex items-center gap-1 mt-2 text-[13px]">
-                        <span className="sr-only">Quantity for {line.title}</span>
-                        <select
-                          value={line.qty}
-                          disabled={busy}
-                          onChange={(e) => void changeQty(line.productId, line.variantSku, Number(e.target.value))}
-                          className="border border-border rounded-sm px-1.5 py-1 text-[13px] cursor-pointer bg-[#f0f2f2] hover:bg-[#e3e6e6]"
-                        >
-                          {Array.from({ length: maxOption }, (_, i) => i + 1).map((n) => (
-                            <option key={n} value={n}>
-                              Qty: {n}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
                   </div>
                 </li>
               );
@@ -321,109 +163,34 @@ export function CartView({
           </ul>
         )}
 
-        {/* Save for later */}
         {saved.length > 0 && (
-          <div className="border-t border-border mt-4 pt-4">
-            <h2 className="text-lg font-medium text-headline mb-3">Save for later</h2>
-            <ul className="divide-y divide-border">
+          <div className="mt-4 border-t border-border pt-6">
+            <div className="flex items-center justify-between gap-3"><h3 className="font-display text-2xl text-headline">Saved for later</h3><span className="text-xs text-text-muted">{saved.length} saved</span></div>
+            <ul className="mt-4 divide-y divide-border">
               {saved.map((line) => {
                 const info = skuInfo[line.variantSku];
                 const busy = pendingSku === line.variantSku;
                 return (
-                  <li key={line.variantSku} className="py-3 flex flex-col sm:flex-row sm:gap-3">
-                    <a
-                      href={info?.slug ? `/product/${info.slug}` : "#"}
-                      className="shrink-0 w-20 h-20 bg-[#f7fafa] rounded-sm overflow-hidden"
-                    >
-                      <Image src={line.image} alt={line.title} width={80} height={80} className="w-full h-full object-cover" />
-                    </a>
-                    <div className="flex-1 min-w-0 sm:mt-0 mt-2">
-                      <p className="text-[14px] leading-snug text-link line-clamp-2">{line.title}</p>
-                      <p className="text-[15px] font-semibold text-headline mt-1">
-                        {formatPrice(line.priceCents)}
-                        <span className="ml-2 text-[13px] font-normal text-muted">FREE delivery</span>
-                      </p>
-                      <div className="mt-1 flex items-center gap-3 text-[13px]">
-                        <button
-                          type="button"
-                          disabled={busy || (info?.stock ?? 0) <= 0}
-                          onClick={() => void doMoveToCart(line)}
-                          className="text-link hover:text-link-hover hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {info && info.stock <= 0 ? "Currently unavailable" : "Move to cart"}
-                        </button>
-                        <span className="text-border">|</span>
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => void doRemoveSaved(line)}
-                          className="text-link hover:text-link-hover hover:underline disabled:opacity-50"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
+                  <li key={line.variantSku} className="flex gap-3 py-4">
+                    <Link href={info?.slug ? `/product/${info.slug}` : "#"} className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-border bg-surface-raised"><Image src={line.image || "/images/placeholder.png"} alt={line.title} width={80} height={80} className="h-full w-full object-contain p-1" /></Link>
+                    <div className="min-w-0 flex-1"><Link href={info?.slug ? `/product/${info.slug}` : "#"} className="line-clamp-2 text-sm font-semibold text-headline hover:text-accent">{line.title}</Link><p className="mt-1 text-sm font-bold text-headline">{formatPrice(line.priceCents)}</p><div className="mt-2 flex items-center gap-3 text-xs"><button type="button" disabled={busy || (info?.stock ?? 0) <= 0} onClick={() => void doMoveToCart(line)} className="morrow-link disabled:cursor-not-allowed disabled:opacity-50">{info && info.stock <= 0 ? "Unavailable" : "Move to bag"}</button><span className="text-border-strong">·</span><button type="button" disabled={busy} onClick={() => void doRemoveSaved(line)} className="morrow-link disabled:opacity-50">Remove</button></div></div>
                   </li>
                 );
               })}
             </ul>
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Right: summary rail */}
       {lines.length > 0 && (
-        <aside className="bg-card rounded-sm shadow-sm p-4 lg:sticky lg:top-3">
-          <p className="text-[13px] leading-snug">
-            <span className="text-[#007600] font-semibold">Your order qualifies for FREE delivery.</span>{" "}
-            <span className="text-muted">Choose this option at checkout.</span>
-          </p>
-
-          <p className="text-lg font-medium text-headline mt-3">
-            Subtotal ({selectedCount} {selectedCount === 1 ? "item" : "items"}):{" "}
-            <span className="font-semibold">{formatPrice(selectedSubtotal)}</span>
-          </p>
-
-          <label className="flex items-center gap-2 mt-2 text-[13px] cursor-pointer">
-            <input
-              type="checkbox"
-              checked={state.isGift ?? false}
-              disabled={savingGift || selectedCount === 0}
-              onChange={() => void doToggleGift()}
-              className="w-4 h-4 accent-[#007185]"
-            />
-            This order contains a gift
-          </label>
-          {state.isGift && (
-            <p className="text-[12px] text-muted mt-1">
-              Gift options and a gift message can be added at checkout.
-            </p>
-          )}
-
-          <button
-            type="button"
-            disabled={selectedCount === 0}
-            onClick={checkout}
-            className="w-full mt-3 bg-cta hover:bg-[#e6c200] border border-cta-border text-headline rounded-[8px] px-4 py-2 text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Proceed to checkout
-          </button>
-
-          {/* Prime upsell */}
-          <div className="mt-4 border border-border rounded-sm p-3">
-            <p className="text-[13px] flex items-center gap-1.5 font-semibold text-headline">
-              <span className="text-link">prime</span>
-            </p>
-            <p className="text-[13px] text-muted mt-1 leading-snug">
-              Fast, FREE delivery on eligible items with a 30-day trial for $0
-            </p>
-            <button
-              type="button"
-              className="mt-2 w-full border border-border rounded-[8px] px-3 py-1.5 text-[13px] font-medium text-headline hover:bg-row-hover"
-            >
-              Accept your free trial
-            </button>
-          </div>
+        <aside className="morrow-panel p-5 lg:sticky lg:top-24">
+          <p className="morrow-eyebrow">Ready when you are</p>
+          <p className="mt-3 text-sm leading-relaxed text-text-secondary">{state.qualifiesForFreeDelivery ? "Your order qualifies for complimentary delivery." : "Delivery options are chosen at checkout."}</p>
+          <div className="mt-5 flex items-baseline justify-between gap-3 border-t border-border pt-5"><span className="text-sm text-text-secondary">Subtotal ({selectedCount} {selectedCount === 1 ? "item" : "items"})</span><span className="text-2xl font-extrabold tracking-[-0.05em] text-headline">{formatPrice(selectedSubtotal)}</span></div>
+          <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm text-text-secondary"><input type="checkbox" checked={state.isGift ?? false} disabled={savingGift || selectedCount === 0} onChange={() => void doToggleGift()} className="h-4 w-4 accent-[#A78BFA]" />This order contains a gift</label>
+          {state.isGift && <p className="mt-2 text-xs leading-relaxed text-text-muted">Gift options and a message can be added at checkout.</p>}
+          <button type="button" disabled={selectedCount === 0} onClick={checkout} className="morrow-button mt-5 w-full disabled:cursor-not-allowed disabled:opacity-50">Proceed to checkout <span aria-hidden="true">→</span></button>
+          <p className="mt-3 text-center text-xs text-text-muted">No payment is taken until you place the order.</p>
         </aside>
       )}
     </div>

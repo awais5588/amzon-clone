@@ -1,11 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  getCartSummaryState,
-  subscribeCartSummary,
-  type CartSummaryState,
-} from "@/lib/cart-client";
+import Link from "next/link";
+import { getCartSummaryState, subscribeCartSummary, type CartSummaryState } from "@/lib/cart-client";
 import { getCartState } from "@/app/_actions/cart";
 import { formatPrice } from "@/lib/format";
 
@@ -26,24 +23,19 @@ export function MiniCart() {
     };
   }, []);
 
-  if (summary.totalQty === 0) {
-    return <div className="hidden" />;
-  }
+  if (summary.totalQty === 0) return null;
 
   return (
-    <aside className="bg-card rounded-sm shadow-md border border-border p-4 w-64">
-      <p className="text-xs text-muted mb-0.5">Subtotal</p>
-      <p className="text-2xl font-semibold text-headline mb-2">{formatPrice(summary.subtotalCents)}</p>
-      <p className="text-[13px] text-muted leading-snug">
-        Your order qualifies for <span className="text-headline font-semibold">FREE delivery</span>.
-        Choose this option <span className="font-semibold">at checkout.</span>
+    <aside className="sticky top-24 w-64 rounded-2xl border border-border bg-surface-raised p-5 shadow-[0_18px_50px_rgba(0,0,0,0.28)]">
+      <p className="morrow-eyebrow">Your bag</p>
+      <p className="mt-2 text-3xl font-extrabold tracking-[-0.05em] text-headline">{formatPrice(summary.subtotalCents)}</p>
+      <p className="mt-2 text-sm leading-relaxed text-text-secondary">
+        Your order qualifies for complimentary delivery. Choose the option at checkout.
       </p>
-      <a
-        href="/cart"
-        className="block text-center bg-cta hover:bg-[#e6c200] border border-cta-border text-headline rounded-[8px] px-3 py-2 text-[13px] font-medium shadow-sm mt-3"
-      >
-        Go to Cart
-      </a>
+      <Link href="/cart" className="morrow-button mt-5 w-full">
+        Review bag
+        <span aria-hidden="true">→</span>
+      </Link>
     </aside>
   );
 }
